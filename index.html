@@ -2,9 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Zen Story Reader</title>
-    <!-- 引入字体库 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Zen+Old+Mincho:wght@400;700&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet">
@@ -13,7 +12,7 @@
 
     <style>
         :root {
-            /* --- 视觉风格锁定：Reader.html 核心配色 --- */
+            /* --- 视觉风格锁定：Reader.html 核心配色 (日间) --- */
             --paper-bg: #F6F4F0;
             --ink-black: #2B2B2B;       /* 主要文字颜色：墨黑 */
             --ink-light: #555555;       /* 次要文字颜色：淡墨 */
@@ -23,14 +22,36 @@
             --moss-green: #586650;      /* 辅助色：苔藓绿 */
             --highlight-bg: rgba(88, 102, 80, 0.05);
             
+            --panel-bg: #fff;           /* 弹窗背景 */
+            --scroll-bg: rgba(255,255,255,0.7); /* 卷轴背景 */
+            --nav-bg: rgba(246, 244, 240, 0.5); /* 导航栏背景 */
+            --border-color: rgba(0,0,0,0.08);
+            
             --font-main: 'Noto Serif SC', serif;
             --font-mincho: 'Zen Old Mincho', serif;
             --font-latin: 'Crimson Text', serif;
         }
 
+        /* --- 夜间模式变量重写 --- */
+        body.dark-mode {
+            --paper-bg: #1a1a1a;        /* 深灰背景 */
+            --ink-black: #e0e0e0;       /* 灰白文字 */
+            --ink-light: #a0a0a0;       /* 淡灰文字 */
+            --ink-faint: #666666;       
+            --stone-gray: #777777;      
+            --cinnabar-red: #d46a5f;    /* 稍亮的红，防刺眼 */
+            --moss-green: #7d8f73;      
+            --highlight-bg: rgba(255, 255, 255, 0.05);
+
+            --panel-bg: #252525;
+            --scroll-bg: rgba(30, 30, 30, 0.85); /* 深色半透明 */
+            --nav-bg: rgba(40, 40, 40, 0.6);
+            --border-color: rgba(255,255,255,0.1);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* 强制锁定 Body 背景，防止被 ST 记录中的 CSS 覆盖 */
+        /* 强制锁定 Body 背景 */
         body {
             background-color: var(--paper-bg) !important;
             color: var(--ink-black) !important;
@@ -43,6 +64,7 @@
             /* 纸质纹理滤镜 */
             background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E") !important;
             overflow: hidden; 
+            transition: background-color 0.5s;
         }
 
         /* --- 主容器 --- */
@@ -52,32 +74,38 @@
             height: 90vh;
             display: flex;
             position: relative;
-            background: rgba(255,255,255,0.7) !important;
-            box-shadow: 0 20px 60px -10px rgba(43, 43, 43, 0.15) !important;
+            background: var(--scroll-bg) !important;
+            box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.2) !important;
             backdrop-filter: blur(5px);
             border-radius: 4px;
             transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             overflow: hidden;
-            border: none !important; /* 防止外部边框干扰 */
+            border: none !important; 
         }
 
         /* 内部边框装饰 */
         .zen-scroll::before {
             content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px;
-            border: 1px solid rgba(43, 43, 43, 0.08);
+            border: 1px solid var(--border-color);
             border-radius: 2px;
             pointer-events: none;
             z-index: 10;
+            transition: opacity 0.5s;
         }
 
         /* --- 折叠状态 --- */
         .zen-scroll.folded {
             width: 160px;
             height: 500px;
-            background: #F0EFE9 !important;
+            background: #F0EFE9 !important; /* 折叠时保持书脊颜色，或者也可以适配暗色，这里暂保持原样 */
             box-shadow: 10px 10px 30px rgba(0,0,0,0.1) !important;
             cursor: pointer;
         }
+        body.dark-mode .zen-scroll.folded {
+            background: #2a2a2a !important;
+            border: 1px solid #444;
+        }
+        
         .zen-scroll.folded .inner-layout { opacity: 0; pointer-events: none; }
         .zen-scroll.folded .cover-spine { opacity: 1; transition-delay: 0.3s; }
 
@@ -119,9 +147,18 @@
             justify-content: space-between;
             padding: 40px 0 40px 0;
             align-items: center;
-            border-right: 1px solid rgba(0,0,0,0.06);
-            background: rgba(246, 244, 240, 0.5) !important;
+            border-right: 1px solid var(--border-color);
+            background: var(--nav-bg) !important;
             z-index: 2;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        /* 沉浸模式隐藏导航 */
+        .nav-area.immersive-hidden {
+            transform: translateX(-100%);
+            opacity: 0;
+            width: 0; min-width: 0; padding: 0;
+            pointer-events: none;
         }
 
         .header-vertical {
@@ -173,7 +210,7 @@
         .menu-btn:hover, .menu-btn.active {
             border-color: var(--ink-black);
             color: var(--ink-black);
-            background: #fff;
+            background: var(--panel-bg);
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
         .menu-label {
@@ -191,10 +228,20 @@
 
         .chapter-header {
             padding: 30px 60px 20px 60px;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
+            border-bottom: 1px solid var(--border-color);
             display: flex; justify-content: space-between; align-items: flex-end;
-            background: rgba(255,255,255,0.4);
+            background: transparent;
+            transition: transform 0.4s ease, opacity 0.4s ease, margin 0.4s ease;
         }
+        
+        /* 沉浸模式隐藏 Header */
+        .chapter-header.immersive-hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            margin-bottom: -70px; /* 补偿高度 */
+            pointer-events: none;
+        }
+
         .current-chat-title {
             font-family: var(--font-mincho);
             font-size: 24px; color: var(--ink-black);
@@ -217,22 +264,24 @@
             scrollbar-width: thin;
             scrollbar-color: var(--stone-gray) transparent;
             scroll-behavior: smooth;
-            background: transparent !important; /* 确保背景透明 */
+            background: transparent !important; 
+            transition: padding 0.4s ease;
         }
         #chat-container::-webkit-scrollbar { width: 4px; }
         #chat-container::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 4px; }
+        
+        body.dark-mode #chat-container::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
 
         /* --- 核心消息样式 (小说化处理) --- */
         .message-row {
             margin-bottom: 25px;
             animation: fadeIn 0.5s ease;
-            /* 锁定字体与颜色，确保不乱变 */
             font-family: var(--font-main) !important;
             font-size: 17px !important;
             line-height: 1.8 !important;
             color: var(--ink-black) !important;
-            background: none !important; /* 防止消息自带背景 */
-            border: none !important; /* 防止消息自带边框 */
+            background: none !important; 
+            border: none !important; 
             
             max-width: 900px;
             margin-left: auto; margin-right: auto;
@@ -255,7 +304,6 @@
             background: var(--cinnabar-red); border-radius: 50%; opacity: 0.5;
         }
         
-        /* 用户消息微调，保持色调和谐 */
         .message-user .char-name-tag {
             color: var(--moss-green);
             align-self: flex-end;
@@ -278,7 +326,7 @@
 
         /* 内部排版 */
         .bubble p { margin-bottom: 12px; text-indent: 0; }
-        .bubble strong { font-weight: 700; color: #000; }
+        .bubble strong { font-weight: 700; color: inherit; } /* Fix strong color in dark mode */
         .bubble em { font-family: var(--font-latin); font-style: italic; color: var(--ink-faint); }
         .bubble blockquote {
             border-left: 3px solid var(--stone-gray);
@@ -289,7 +337,6 @@
             background: var(--highlight-bg);
             padding: 10px 15px;
         }
-        /* 隐藏思维链 */
         .bubble code {
             font-family: 'Crimson Text', serif;
             background: rgba(0,0,0,0.05);
@@ -297,6 +344,7 @@
             font-size: 0.9em;
             color: var(--moss-green);
         }
+        body.dark-mode .bubble code { background: rgba(255,255,255,0.1); }
 
         /* 悬停显示书签操作 */
         .msg-action-bar {
@@ -316,14 +364,17 @@
         #pagination-bar {
             position: absolute; bottom: 0; left: 0; right: 0;
             height: 60px;
-            background: rgba(246, 244, 240, 0.9) !important;
-            border-top: 1px solid rgba(0,0,0,0.05);
+            background: var(--nav-bg) !important;
+            border-top: 1px solid var(--border-color);
             display: flex; justify-content: center; align-items: center; gap: 40px;
             z-index: 5;
-            transition: transform 0.3s;
+            transition: transform 0.4s ease;
         }
         #pagination-bar.hidden { transform: translateY(100%); }
         
+        /* 沉浸模式也隐藏翻页栏（如果是翻页模式下） */
+        #pagination-bar.immersive-hidden { transform: translateY(100%); }
+
         .page-btn {
             background: none; border: none;
             font-family: var(--font-mincho);
@@ -340,9 +391,10 @@
             transform: translate(-50%, -50%);
             width: 80%; max-width: 600px;
             height: 70%;
-            background: #fff;
-            border: 1px solid rgba(0,0,0,0.08);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            background: var(--panel-bg);
+            color: var(--ink-black);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             padding: 30px;
             display: none;
             flex-direction: column;
@@ -365,29 +417,34 @@
 
         /* 列表样式 */
         .zen-list-item {
-            padding: 12px; border-bottom: 1px dashed #eee;
+            padding: 12px; border-bottom: 1px dashed var(--border-color);
             cursor: pointer; transition: 0.2s;
             display: flex; justify-content: space-between; align-items: center;
         }
         .zen-list-item:hover { background: var(--highlight-bg); padding-left: 20px; }
-        .zen-list-item.active { border-left: 3px solid var(--cinnabar-red); background: #fff; }
+        .zen-list-item.active { border-left: 3px solid var(--cinnabar-red); background: var(--panel-bg); }
         
         /* 按钮与输入 */
         .zen-btn {
-            background: var(--ink-black); color: #fff;
+            background: var(--ink-black); color: var(--paper-bg);
             border: none; padding: 8px 16px; font-family: var(--font-main);
             cursor: pointer; font-size: 12px; letter-spacing: 1px;
             transition: 0.2s;
         }
-        .zen-btn:hover { background: var(--cinnabar-red); }
-        .zen-btn.danger { background: #888; }
+        .zen-btn:hover { background: var(--cinnabar-red); color: #fff; }
+        .zen-btn.danger { background: #888; color: #fff;}
         .zen-btn.danger:hover { background: #d00; }
         
         input[type="file"] { display: none; }
+        input[type="number"] {
+            background: transparent;
+            border: 1px solid var(--stone-gray);
+            color: var(--ink-black);
+        }
 
         /* 移动端适配 */
         @media (max-width: 768px) {
-            body { padding: 0; background: #fff; }
+            body { padding: 0; background: var(--panel-bg); }
             .zen-scroll { height: 100vh; width: 100vw; border-radius: 0; }
             .zen-scroll::before { display: none; }
             .nav-area { width: 60px; padding: 20px 0; }
@@ -404,7 +461,6 @@
 
     <div class="zen-scroll" id="zenApp">
         
-        <!-- 封面 (折叠状态) -->
         <div class="cover-spine" onclick="unfoldZen()">
             <div class="spine-sub">BOOK</div>
             <div class="spine-title">記録</div>
@@ -412,39 +468,38 @@
         </div>
 
         <div class="inner-layout">
-            <!-- 侧边导航 -->
-            <div class="nav-area">
+            <div class="nav-area" id="main-nav">
                 <div class="header-vertical">
                     <div class="subtitle-en">SillyTavern Archive</div>
                     <div class="title-kanji" onclick="foldZen()"><span>阅</span><span>读</span><span>器</span></div>
                 </div>
 
                 <nav class="category-menu">
-                    <!-- 导入 -->
                     <div class="menu-btn" onclick="document.getElementById('fileInput').click()" title="导入文件">
                         <i class="fa-solid fa-file-import"></i>
                         <span class="menu-label">导入</span>
                     </div>
                     
-                    <!-- 目录 -->
                     <div class="menu-btn" onclick="togglePanel('list-panel')" title="对话列表">
                         <i class="fa-solid fa-list-ul"></i>
                         <span class="menu-label">目录</span>
                     </div>
 
-                    <!-- 书签 -->
                     <div class="menu-btn" onclick="togglePanel('bookmark-panel')" title="书签">
                         <i class="fa-regular fa-star"></i>
                         <span class="menu-label">书签</span>
                     </div>
 
-                    <!-- 模式切换 -->
                     <div class="menu-btn" id="mode-btn" onclick="toggleMode()" title="切换模式">
                         <i class="fa-solid fa-scroll"></i>
                         <span class="menu-label">翻页</span>
                     </div>
+
+                    <div class="menu-btn" id="theme-btn" onclick="toggleTheme()" title="夜间模式">
+                        <i class="fa-solid fa-moon"></i>
+                        <span class="menu-label">夜间</span>
+                    </div>
                     
-                    <!-- 设置 (正则) -->
                     <div class="menu-btn" onclick="togglePanel('settings-panel')" title="更多设置">
                         <i class="fa-solid fa-gear"></i>
                         <span class="menu-label">设置</span>
@@ -452,16 +507,13 @@
                 </nav>
             </div>
 
-            <!-- 主内容区域 -->
             <div class="main-area">
                 
-                <!-- 顶部标题 -->
-                <div class="chapter-header">
+                <div class="chapter-header" id="main-header">
                     <div class="current-chat-title" id="trigger-text">未选择对话</div>
                     <div class="page-indicator" id="page-info">0 / 0</div>
                 </div>
 
-                <!-- 文本容器 -->
                 <div id="chat-container">
                     <div style="text-align: center; color: var(--stone-gray); margin-top: 100px; font-family: var(--font-mincho);">
                         <i class="fa-solid fa-book-open" style="font-size: 40px; margin-bottom: 20px; opacity: 0.5;"></i><br>
@@ -469,7 +521,6 @@
                     </div>
                 </div>
 
-                <!-- 底部翻页栏 -->
                 <div id="pagination-bar">
                     <button class="page-btn" onclick="changePage(-1)">
                         <i class="fa-solid fa-chevron-left"></i> 上一页
@@ -482,9 +533,6 @@
 
             </div>
 
-            <!-- 弹窗面板 -->
-            
-            <!-- 1. 档案列表 -->
             <div id="list-panel" class="zen-panel">
                 <div class="panel-header">
                     <span><i class="fa-solid fa-list"></i> 档案目录</span>
@@ -496,7 +544,6 @@
                 <div id="chat-list-content" class="panel-content"></div>
             </div>
 
-            <!-- 2. 书签列表 -->
             <div id="bookmark-panel" class="zen-panel">
                 <div class="panel-header">
                     <span><i class="fa-regular fa-star"></i> 书签记录</span>
@@ -508,7 +555,6 @@
                 <div id="bookmark-list" class="panel-content"></div>
             </div>
 
-            <!-- 3. 设置面板 (仅保留正则) -->
             <div id="settings-panel" class="zen-panel">
                 <div class="panel-header">
                     <span><i class="fa-solid fa-sliders"></i> 设置与工具</span>
@@ -516,17 +562,17 @@
                 </div>
                 <div class="panel-content" style="display: flex; flex-direction: column; gap: 20px;">
                     
-                    <div style="border-bottom: 1px solid #eee; padding-bottom: 20px;">
+                    <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
                         <h4 style="margin-bottom: 10px; font-family: var(--font-mincho);">正则替换 (Regex)</h4>
                         <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                             <button class="zen-btn" onclick="document.getElementById('regexFileInput').click()">导入脚本</button>
                             <button class="zen-btn danger" onclick="clearAllScripts()">清空所有</button>
                         </div>
-                        <div id="script-list-container" style="max-height: 200px; overflow-y: auto; border: 1px dashed #ddd; padding: 5px;"></div>
+                        <div id="script-list-container" style="max-height: 200px; overflow-y: auto; border: 1px dashed var(--stone-gray); padding: 5px;"></div>
                     </div>
                     
                     <div style="font-size: 12px; color: var(--stone-gray);">
-                        * 样式已被锁定为 Reader 模式。
+                        <p>* 移动端双击屏幕可进入/退出沉浸阅读模式。</p>
                     </div>
 
                 </div>
@@ -535,7 +581,6 @@
         </div>
     </div>
 
-    <!-- 隐藏的输入框 -->
     <input type="file" id="fileInput" accept="*" multiple>
     <input type="file" id="regexFileInput" accept=".json,.txt" multiple>
 
@@ -563,6 +608,77 @@
 
         function closeAllPanels() {
             document.querySelectorAll('.zen-panel').forEach(p => p.style.display = 'none');
+        }
+
+        // --- 新增功能：夜间模式 ---
+        let isDarkMode = false;
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                document.querySelector('#theme-btn i').className = 'fa-solid fa-sun';
+                document.querySelector('#theme-btn .menu-label').textContent = '日间';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.querySelector('#theme-btn i').className = 'fa-solid fa-moon';
+                document.querySelector('#theme-btn .menu-label').textContent = '夜间';
+            }
+            localStorage.setItem('st_reader_theme', isDarkMode ? 'dark' : 'light');
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('st_reader_theme');
+            if (savedTheme === 'dark') {
+                isDarkMode = true;
+                document.body.classList.add('dark-mode');
+                document.querySelector('#theme-btn i').className = 'fa-solid fa-sun';
+                document.querySelector('#theme-btn .menu-label').textContent = '日间';
+            }
+        }
+
+        // --- 新增功能：移动端双击沉浸模式 ---
+        let lastTap = 0;
+        let isImmersive = false;
+
+        document.getElementById('zenApp').addEventListener('touchend', function(e) {
+            // 排除点击按钮、输入框、面板等交互元素
+            if (e.target.closest('.menu-btn') || 
+                e.target.closest('.zen-panel') || 
+                e.target.closest('.page-btn') ||
+                e.target.closest('.page-indicator')) {
+                return;
+            }
+
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            
+            // 判断双击 (小于300ms)
+            if (tapLength < 300 && tapLength > 0) {
+                toggleImmersive();
+                e.preventDefault(); // 防止默认放大行为
+            }
+            lastTap = currentTime;
+        });
+
+        function toggleImmersive() {
+            isImmersive = !isImmersive;
+            const nav = document.getElementById('main-nav');
+            const header = document.getElementById('main-header');
+            const pageBar = document.getElementById('pagination-bar');
+            const container = document.getElementById('chat-container');
+
+            if (isImmersive) {
+                nav.classList.add('immersive-hidden');
+                header.classList.add('immersive-hidden');
+                pageBar.classList.add('immersive-hidden');
+                // 增加上下边距以利用空间
+                container.style.paddingTop = '60px'; 
+            } else {
+                nav.classList.remove('immersive-hidden');
+                header.classList.remove('immersive-hidden');
+                if (isPageMode) pageBar.classList.remove('immersive-hidden'); // 只有翻页模式才恢复底栏
+                container.style.paddingTop = '40px';
+            }
         }
 
         // --- 核心逻辑 ---
@@ -725,14 +841,10 @@
             
             // 清理
             text = text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, ''); 
-            // 隐藏 <disclaimer> 标签及其内容
             text = text.replace(/<disclaimer>[\s\S]*?<\/disclaimer>/gi, '');
-
-            // --- 核心修复：剔除聊天记录中的样式和脚本标签 ---
             text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
             text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
             text = text.replace(/<link[^>]*>/gi, '');
-            // --------------------------------------------------
             
             // 纯 Markdown 渲染
             let htmlContent = marked.parse(text);
@@ -789,7 +901,7 @@
             const icon = document.querySelector('#mode-btn i');
             if(isPageMode) {
                 btn.textContent = "翻页"; icon.className = "fa-solid fa-copy";
-                paginationBar.classList.remove('hidden');
+                if (!isImmersive) paginationBar.classList.remove('hidden'); // Check Immersive
             } else {
                 btn.textContent = "滑动"; icon.className = "fa-solid fa-scroll";
                 paginationBar.classList.add('hidden');
@@ -816,7 +928,7 @@
             listDiv.innerHTML = '';
             
             if(chats.length === 0) {
-                listDiv.innerHTML = '<div style="padding:20px;text-align:center;color:#999">暂无档案</div>';
+                listDiv.innerHTML = '<div style="padding:20px;text-align:center;color:var(--stone-gray)">暂无档案</div>';
                 return;
             }
 
@@ -867,7 +979,7 @@
                 const label = document.querySelector('#mode-btn .menu-label');
                 if(isPageMode) {
                     label.textContent = "翻页"; icon.className = "fa-solid fa-copy";
-                    paginationBar.classList.remove('hidden');
+                    if (!isImmersive) paginationBar.classList.remove('hidden');
                 } else {
                     label.textContent = "滑动"; icon.className = "fa-solid fa-scroll";
                     paginationBar.classList.add('hidden');
@@ -924,7 +1036,7 @@
             const div = document.getElementById('bookmark-list');
             div.innerHTML = '';
             if(list.length === 0) {
-                 div.innerHTML = '<div style="padding:20px;text-align:center;color:#999">暂无书签</div>';
+                 div.innerHTML = '<div style="padding:20px;text-align:center;color:var(--stone-gray)">暂无书签</div>';
                  return;
             }
             list.forEach(bm => {
@@ -1048,6 +1160,8 @@
 
         // 初始化
         window.onload = async () => {
+            initTheme(); // 初始化主题
+
             const savedScripts = localStorage.getItem('st_reader_script_lib');
             if(savedScripts) scriptLibrary = JSON.parse(savedScripts);
             
