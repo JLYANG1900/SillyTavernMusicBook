@@ -2816,3 +2816,114 @@ body.dark-mode .list-item:hover {
         opacity: 1;
     }
 }
+
+/* ===== Critical Mobile Fixes for Creator Panel ===== */
+@media (max-width: 768px) {
+
+    /* Fix app-root height */
+    #app-root {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
+
+    /* Force Creator layout to single column */
+    .creator-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        grid-template-columns: none !important;
+        height: auto !important;
+        overflow: visible !important;
+        gap: 0 !important;
+    }
+
+    /* Left sidebar panel (故事/记忆/背景信息) comes first */
+    .left-sidebar-panel {
+        order: 1;
+        width: 100% !important;
+        flex: none !important;
+        overflow: visible !important;
+        padding: 12px;
+        max-height: none !important;
+    }
+
+    /* Style selector panel (01/Creator Profile etc) comes second */
+    .style-selector-panel {
+        order: 2;
+        width: 100% !important;
+        flex: none !important;
+        overflow: visible !important;
+    }
+
+    /* Allow content to scroll naturally */
+    .form-scroll {
+        height: auto !important;
+        overflow: visible !important;
+        max-height: none !important;
+    }
+
+    /* Collapsible panels adjust */
+    .collapsible-panel {
+        width: 100%;
+    }
+
+    .collapsible-panel .panel-content {
+        max-height: none;
+    }
+
+    .collapsible-panel .panel-content.collapsed {
+        max-height: 0;
+    }
+
+    /* Content area scrollable */
+    .content-area {
+        height: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Tab content auto height */
+    .tab-content {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .tab-content.active {
+        display: block !important;
+    }
+
+    /* Memory and story panels */
+    .memory-preview-panel,
+    .story-panel,
+    .background-info-panel {
+        max-height: none !important;
+        flex: none !important;
+    }
+}
+
+/* ===== Extra Small Phones ===== */
+@media (max-width: 480px) {
+    .creator-layout {
+        flex-direction: column !important;
+        display: flex !important;
+    }
+
+    .left-sidebar-panel {
+        padding: 8px;
+    }
+
+    .form-scroll {
+        padding: 8px;
+    }
+
+    /* Smaller grids */
+    .vocal-grid,
+    .genre-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .toggle-btn {
+        padding: 8px;
+        font-size: 11px;
+    }
+}
