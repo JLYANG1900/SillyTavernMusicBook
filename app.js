@@ -212,10 +212,66 @@ const App = {
     },
 
     ui: {
+        lastTapTime: 0,
+
         init() {
             this.bindTabEvents();
             this.bindSidebarEvents();
             this.loadTheme();
+            this.initMobileSidebar();
+        },
+
+        // Initialize mobile sidebar with double-tap gesture
+        initMobileSidebar() {
+            // Only on mobile
+            if (window.innerWidth > 768) return;
+
+            // Show hint briefly on first load
+            const hint = document.getElementById('mobile-sidebar-hint');
+            if (hint && !localStorage.getItem('mcc_sidebar_hint_shown')) {
+                setTimeout(() => {
+                    hint.classList.add('visible');
+                    setTimeout(() => {
+                        hint.classList.remove('visible');
+                        localStorage.setItem('mcc_sidebar_hint_shown', 'true');
+                    }, 3000);
+                }, 1000);
+            }
+
+            // Double-tap listener on content area
+            const contentArea = document.querySelector('.content-area');
+            if (contentArea) {
+                contentArea.addEventListener('touchend', (e) => {
+                    const now = Date.now();
+                    const timeDiff = now - this.lastTapTime;
+
+                    if (timeDiff < 300 && timeDiff > 0) {
+                        // Double tap detected
+                        e.preventDefault();
+                        this.toggleMobileSidebar();
+                    }
+                    this.lastTapTime = now;
+                }, { passive: false });
+            }
+        },
+
+        toggleMobileSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+
+            if (sidebar.classList.contains('mobile-visible')) {
+                this.hideMobileSidebar();
+            } else {
+                sidebar.classList.add('mobile-visible');
+                backdrop.classList.add('active');
+            }
+        },
+
+        hideMobileSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            sidebar.classList.remove('mobile-visible');
+            backdrop.classList.remove('active');
         },
 
         bindTabEvents() {
