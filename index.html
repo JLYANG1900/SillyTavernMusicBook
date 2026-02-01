@@ -1,1253 +1,622 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zen Story Reader</title>
-    <!-- 引入字体库 -->
+    <title>Music Creator Cloud</title>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Zen+Old+Mincho:wght@400;700&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@300;400&family=Noto+Serif+SC:wght@300;400;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <style>
-        :root {
-            /* --- 视觉风格锁定：Reader.html 核心配色 (日间) --- */
-            --paper-bg: #F6F4F0;
-            --ink-black: #2B2B2B;       /* 主要文字颜色：墨黑 */
-            --ink-light: #555555;       /* 次要文字颜色：淡墨 */
-            --ink-faint: #888888;       /* 微弱文字颜色 */
-            --stone-gray: #9E9D99;      /* 装饰性灰色 */
-            --cinnabar-red: #CD4639;    /* 强调色：朱砂红 */
-            --moss-green: #586650;      /* 辅助色：苔藓绿 */
-            --highlight-bg: rgba(88, 102, 80, 0.05);
-            
-            --panel-bg: #fff;           /* 弹窗背景 */
-            --scroll-bg: rgba(255,255,255,0.7); /* 卷轴背景 */
-            --nav-bg: rgba(246, 244, 240, 0.5); /* 导航栏背景 */
-            --border-color: rgba(0,0,0,0.08);
-            
-            --font-main: 'Noto Serif SC', serif;
-            --font-mincho: 'Zen Old Mincho', serif;
-            --font-latin: 'Crimson Text', serif;
-        }
-
-        /* --- 夜间模式变量重写 --- */
-        body.dark-mode {
-            --paper-bg: #1a1a1a;        /* 深灰背景 */
-            --ink-black: #e0e0e0;       /* 灰白文字 */
-            --ink-light: #a0a0a0;       /* 淡灰文字 */
-            --ink-faint: #666666;       
-            --stone-gray: #777777;      
-            --cinnabar-red: #d46a5f;    /* 稍亮的红，防刺眼 */
-            --moss-green: #7d8f73;      
-            --highlight-bg: rgba(255, 255, 255, 0.05);
-
-            --panel-bg: #252525;
-            --scroll-bg: rgba(30, 30, 30, 0.85); /* 深色半透明 */
-            --nav-bg: rgba(40, 40, 40, 0.6);
-            --border-color: rgba(255,255,255,0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        /* 强制锁定 Body 背景 */
-        body {
-            background-color: var(--paper-bg) !important;
-            color: var(--ink-black) !important;
-            font-family: var(--font-main) !important;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            /* 纸质纹理滤镜 */
-            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E") !important;
-            overflow: hidden; 
-            transition: background-color 0.5s;
-        }
-
-        /* --- 主容器 --- */
-        .zen-scroll {
-            width: 100%;
-            max-width: 1200px;
-            height: 90vh;
-            display: flex;
-            position: relative;
-            background: var(--scroll-bg) !important;
-            box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.2) !important;
-            backdrop-filter: blur(5px);
-            border-radius: 4px;
-            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-            overflow: hidden;
-            border: none !important; 
-        }
-
-        /* 内部边框装饰 */
-        .zen-scroll::before {
-            content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 2px;
-            pointer-events: none;
-            z-index: 10;
-            transition: opacity 0.5s;
-        }
-
-        /* --- 折叠状态 --- */
-        .zen-scroll.folded {
-            width: 160px;
-            height: 500px;
-            background: #F0EFE9 !important; 
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.1) !important;
-            cursor: pointer;
-        }
-        body.dark-mode .zen-scroll.folded {
-            background: #2a2a2a !important;
-            border: 1px solid #444;
-        }
-        
-        .zen-scroll.folded .inner-layout { opacity: 0; pointer-events: none; }
-        .zen-scroll.folded .cover-spine { opacity: 1; transition-delay: 0.3s; }
-
-        .cover-spine {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.5s;
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-            font-family: var(--font-mincho);
-            color: var(--ink-black);
-            padding: 20px 0;
-        }
-        .spine-title { font-size: 24px; letter-spacing: 12px; margin-left: 10px; }
-        .seal-spine {
-            width: 48px; height: 48px;
-            border: 2px solid var(--cinnabar-red);
-            color: var(--cinnabar-red);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; margin-top: 30px;
-            border-radius: 8px 3px 6px 4px;
-            writing-mode: horizontal-tb;
-            font-weight: bold;
-            transform: rotate(-5deg);
-        }
-
-        /* --- 内部布局 --- */
-        .inner-layout {
-            display: flex; width: 100%; height: 100%;
-            opacity: 1; transition: opacity 0.5s;
-        }
-
-        /* --- 左侧导航区 --- */
-        .nav-area {
-            width: 100px;
-            min-width: 80px;
-            display: flex; flex-direction: column;
-            justify-content: space-between;
-            padding: 40px 0 40px 0;
-            align-items: center;
-            border-right: 1px solid var(--border-color);
-            background: var(--nav-bg) !important;
-            z-index: 2;
-            transition: transform 0.4s ease, opacity 0.4s ease;
-        }
-
-        /* 沉浸模式隐藏导航 */
-        .nav-area.immersive-hidden {
-            transform: translateX(-100%);
-            opacity: 0;
-            width: 0; min-width: 0; padding: 0;
-            pointer-events: none;
-        }
-
-        .header-vertical {
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-            font-family: var(--font-mincho);
-            display: flex; align-items: center;
-            gap: 10px;
-        }
-        .title-kanji {
-            font-size: 24px; letter-spacing: 8px;
-            font-weight: 700; color: var(--ink-black);
-            cursor: pointer;
-            border-left: 3px solid var(--cinnabar-red);
-            padding-left: 10px;
-            transition: color 0.3s;
-        }
-        .title-kanji:hover { color: var(--cinnabar-red); }
-
-        .subtitle-en {
-            font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-            color: var(--ink-light); 
-            writing-mode: horizontal-tb;
-            transform: rotate(-90deg);
-            white-space: nowrap;
-            font-family: var(--font-latin);
-            margin-bottom: 20px;
-        }
-
-        .category-menu {
-            display: flex; flex-direction: column; gap: 20px;
-            align-items: center;
-            margin-top: auto; margin-bottom: 20px;
-            width: 100%;
-        }
-        
-        .menu-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            border: 1px dashed var(--stone-gray);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            color: var(--ink-light);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 16px;
-            position: relative;
-        }
-        .menu-btn:hover, .menu-btn.active {
-            border-color: var(--ink-black);
-            color: var(--ink-black);
-            background: var(--panel-bg);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-        .menu-label {
-            font-size: 10px; font-family: var(--font-mincho); margin-top: 2px;
-        }
-        .menu-btn i { font-size: 14px; }
-
-        /* --- 主内容区 --- */
-        .main-area {
-            flex: 1; 
-            display: flex; flex-direction: column;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .chapter-header {
-            padding: 30px 60px 20px 60px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex; justify-content: space-between; align-items: flex-end;
-            background: transparent;
-            transition: transform 0.4s ease, opacity 0.4s ease, margin 0.4s ease;
-        }
-        
-        /* 沉浸模式隐藏 Header */
-        .chapter-header.immersive-hidden {
-            transform: translateY(-100%);
-            opacity: 0;
-            margin-bottom: -70px; /* 补偿高度 */
-            pointer-events: none;
-        }
-
-        .current-chat-title {
-            font-family: var(--font-mincho);
-            font-size: 24px; color: var(--ink-black);
-        }
-        .page-indicator {
-            font-family: var(--font-latin);
-            font-size: 14px; color: var(--ink-light);
-            cursor: pointer;
-            border: 1px solid transparent;
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-        .page-indicator:hover { border-color: var(--stone-gray); }
-
-        /* 内容滚动容器 */
-        #chat-container {
-            flex: 1;
-            padding: 40px 80px 100px 80px;
-            scroll-behavior: smooth;
-            background: transparent !important; 
-            transition: padding 0.4s ease;
-            
-            /* --- 垂直滑动锁定与防摇晃逻辑 --- */
-            overflow-y: auto;         /* 允许垂直滚动 */
-            overflow-x: hidden;       /* 强制禁止水平滚动 */
-            touch-action: pan-y;      /* 关键：告诉浏览器只处理垂直滑动手势，忽略水平拖拽 */
-            overscroll-behavior-x: none; /* 禁止水平方向的边界回弹效果 */
-            
-            /* 滚动条样式 */
-            scrollbar-width: thin;
-            scrollbar-color: var(--stone-gray) transparent;
-        }
-        #chat-container::-webkit-scrollbar { width: 4px; }
-        #chat-container::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 4px; }
-        
-        body.dark-mode #chat-container::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
-
-        /* --- 核心消息样式 --- */
-        .message-row {
-            margin-bottom: 25px;
-            animation: fadeIn 0.5s ease;
-            font-family: var(--font-main) !important;
-            font-size: 17px !important;
-            line-height: 1.8 !important;
-            color: var(--ink-black) !important;
-            background: none !important; 
-            border: none !important; 
-            
-            max-width: 900px;
-            margin-left: auto; margin-right: auto;
-            display: flex;
-            flex-direction: column;
-            
-            /* 确保内容不会溢出导致横向撑开 */
-            width: 100%;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .char-name-tag {
-            font-family: var(--font-mincho);
-            font-size: 14px;
-            color: var(--cinnabar-red);
-            margin-bottom: 5px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            display: flex; align-items: center; gap: 8px;
-            position: relative; /* 为内部元素提供定位上下文 */
-        }
-        .char-name-tag::before {
-            content: ''; display: inline-block; width: 6px; height: 6px;
-            background: var(--cinnabar-red); border-radius: 50%; opacity: 0.5;
-        }
-        
-        .message-user .char-name-tag {
-            color: var(--moss-green);
-            align-self: flex-end;
-            /* 用户侧保持反向顺序 */
-            flex-direction: row-reverse;
-        }
-        .message-user .char-name-tag::before { background: var(--moss-green); }
-
-        .bubble-content {
-            position: relative;
-        }
-        
-        /* 文本正文 */
-        .bubble {
-            text-align: justify;
-            white-space: pre-wrap;
-            /* 强制长单词换行，防止撑开宽度 */
-            word-wrap: break-word; 
-            overflow-wrap: break-word;
-        }
-        .message-user .bubble {
-            color: var(--ink-light) !important;
-            text-align: right; 
-        }
-
-        /* 内部排版 */
-        .bubble p { margin-bottom: 12px; text-indent: 0; }
-        .bubble strong { font-weight: 700; color: inherit; } 
-        .bubble em { font-family: var(--font-latin); font-style: italic; color: var(--ink-faint); }
-        .bubble blockquote {
-            border-left: 3px solid var(--stone-gray);
-            padding-left: 15px;
-            color: var(--ink-light);
-            font-style: italic;
-            margin: 10px 0;
-            background: var(--highlight-bg);
-            padding: 10px 15px;
-        }
-        .bubble code {
-            font-family: 'Crimson Text', serif;
-            background: rgba(0,0,0,0.05);
-            padding: 2px 4px; border-radius: 2px;
-            font-size: 0.9em;
-            color: var(--moss-green);
-        }
-        body.dark-mode .bubble code { background: rgba(255,255,255,0.1); }
-
-        /* 图片自适应限制 */
-        .bubble img, .bubble video {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            display: block;
-            margin: 10px 0;
-        }
-
-        /* --- 新版书签操作栏 (位置调整至名字左侧) --- */
-        .msg-action-bar {
-            display: inline-flex;
-            align-items: center;
-            opacity: 0; /* 默认隐藏，保持PC端美学 */
-            transition: opacity 0.3s;
-            margin: 0 10px; /* 给图标和名字之间留出空隙 */
-        }
-        
-        .message-row:hover .msg-action-bar { opacity: 1; }
-
-        .bm-icon {
-            color: var(--stone-gray); cursor: pointer; font-size: 14px; padding: 5px; /* 增加点击区域 */
-        }
-        .bm-icon.active { color: var(--cinnabar-red); }
-        .bm-icon:hover { color: var(--ink-black); }
-
-        /* --- 底部翻页栏 --- */
-        #pagination-bar {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 60px;
-            background: var(--nav-bg) !important;
-            border-top: 1px solid var(--border-color);
-            display: flex; justify-content: center; align-items: center; gap: 40px;
-            z-index: 5;
-            transition: transform 0.4s ease;
-        }
-        #pagination-bar.hidden { transform: translateY(100%); }
-        
-        /* 沉浸模式也隐藏翻页栏（如果是翻页模式下） */
-        #pagination-bar.immersive-hidden { transform: translateY(100%); }
-
-        .page-btn {
-            background: none; border: none;
-            font-family: var(--font-mincho);
-            color: var(--stone-gray);
-            cursor: pointer; font-size: 14px;
-            display: flex; align-items: center; gap: 5px;
-            transition: 0.3s;
-        }
-        .page-btn:hover { color: var(--cinnabar-red); letter-spacing: 2px; }
-
-        /* --- 弹窗面板 --- */
-        .zen-panel {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%; max-width: 600px;
-            height: 70%;
-            background: var(--panel-bg);
-            color: var(--ink-black);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 30px;
-            display: none;
-            flex-direction: column;
-            z-index: 100;
-            animation: slideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-        @keyframes slideUp { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }
-
-        .panel-header {
-            font-family: var(--font-mincho);
-            font-size: 20px;
-            border-bottom: 2px solid var(--cinnabar-red);
-            padding-bottom: 10px; margin-bottom: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .close-panel { cursor: pointer; color: var(--stone-gray); font-size: 18px; }
-        .close-panel:hover { color: var(--cinnabar-red); }
-
-        .panel-content { flex: 1; overflow-y: auto; font-size: 14px; }
-
-        /* 列表样式 */
-        .zen-list-item {
-            padding: 12px; border-bottom: 1px dashed var(--border-color);
-            cursor: pointer; transition: 0.2s;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .zen-list-item:hover { background: var(--highlight-bg); padding-left: 20px; }
-        .zen-list-item.active { border-left: 3px solid var(--cinnabar-red); background: var(--panel-bg); }
-        
-        /* 按钮与输入 */
-        .zen-btn {
-            background: var(--ink-black); color: var(--paper-bg);
-            border: none; padding: 8px 16px; font-family: var(--font-main);
-            cursor: pointer; font-size: 12px; letter-spacing: 1px;
-            transition: 0.2s;
-        }
-        .zen-btn:hover { background: var(--cinnabar-red); color: #fff; }
-        .zen-btn.danger { background: #888; color: #fff;}
-        .zen-btn.danger:hover { background: #d00; }
-        
-        input[type="file"] { display: none; }
-        input[type="number"] {
-            background: transparent;
-            border: 1px solid var(--stone-gray);
-            color: var(--ink-black);
-        }
-
-        /* 移动端适配 */
-        @media (max-width: 768px) {
-            body { padding: 0; background: var(--panel-bg); }
-            .zen-scroll { height: 100vh; width: 100vw; border-radius: 0; }
-            .zen-scroll::before { display: none; }
-            .nav-area { width: 60px; padding: 20px 0; }
-            .subtitle-en, .title-kanji span { display: none; }
-            .title-kanji { border: none; padding: 0; font-size: 18px; margin-bottom: 20px; writing-mode: vertical-rl; }
-            #chat-container { padding: 20px 20px 80px 20px; }
-            .chapter-header { padding: 20px; }
-            .current-chat-title { font-size: 18px; }
-            .zen-panel { width: 95%; height: 80%; }
-            
-            /* --- 移动端特有：书签图标始终可见 --- */
-            .msg-action-bar { opacity: 1; }
-        }
-    </style>
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+    <div id="app-root">
+        <!-- ===== Header ===== -->
+        <header class="app-header">
+            <div class="logo-title">
+                <span class="disc-icon"><i class="fa-solid fa-compact-disc"></i></span>
+                <span class="brand">BRAUN</span>
+                <span class="model">AUDIO 310</span>
+            </div>
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="player">
+                    <i class="fa-solid fa-headphones"></i>
+                    <span class="tab-text">播放器</span>
+                </button>
+                <button class="tab-btn" data-tab="reader">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span class="tab-text">阅读器</span>
+                </button>
+                <button class="tab-btn" data-tab="creator">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span class="tab-text">创作</span>
+                </button>
+                <button class="tab-btn" data-tab="works">
+                    <i class="fa-solid fa-music"></i>
+                    <span class="tab-text">作品</span>
+                </button>
+            </nav>
+        </header>
 
-    <div class="zen-scroll" id="zenApp">
-        
-        <!-- 封面 (折叠状态) -->
-        <div class="cover-spine" onclick="unfoldZen()">
-            <div class="spine-sub">BOOK</div>
-            <div class="spine-title">記録</div>
-            <div class="seal-spine">閲</div>
-        </div>
-
-        <div class="inner-layout">
-            <!-- 侧边导航 -->
-            <div class="nav-area" id="main-nav">
-                <div class="header-vertical">
-                    <div class="subtitle-en">SillyTavern Archive</div>
-                    <div class="title-kanji" onclick="foldZen()"><span>阅</span><span>读</span><span>器</span></div>
+        <!-- ===== Main Layout ===== -->
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="main-sidebar">
+                <div class="sidebar-top">
+                    <div class="sidebar-title">
+                        <span>音乐</span>
+                        <span>创作</span>
+                        <span>云</span>
+                    </div>
                 </div>
 
-                <nav class="category-menu">
-                    <!-- 导入 -->
-                    <div class="menu-btn" onclick="document.getElementById('fileInput').click()" title="导入文件">
+                <nav class="sidebar-menu">
+                    <button class="menu-btn" id="btn-import" title="导入聊天记录">
                         <i class="fa-solid fa-file-import"></i>
                         <span class="menu-label">导入</span>
-                    </div>
-                    
-                    <!-- 目录 -->
-                    <div class="menu-btn" onclick="togglePanel('list-panel')" title="对话列表">
+                    </button>
+                    <button class="menu-btn" id="btn-chat-list" title="对话列表">
                         <i class="fa-solid fa-list-ul"></i>
                         <span class="menu-label">目录</span>
-                    </div>
-
-                    <!-- 书签 -->
-                    <div class="menu-btn" onclick="togglePanel('bookmark-panel')" title="书签">
-                        <i class="fa-regular fa-star"></i>
+                    </button>
+                    <button class="menu-btn" id="btn-memories" title="记忆列表">
+                        <i class="fa-solid fa-music"></i>
+                        <span class="menu-label">记忆</span>
+                    </button>
+                    <button class="menu-btn" id="btn-bookmarks" title="书签列表">
+                        <i class="fa-solid fa-bookmark"></i>
                         <span class="menu-label">书签</span>
-                    </div>
-
-                    <!-- 模式切换 -->
-                    <div class="menu-btn" id="mode-btn" onclick="toggleMode()" title="切换模式">
-                        <i class="fa-solid fa-scroll"></i>
-                        <span class="menu-label">翻页</span>
-                    </div>
-
-                    <!-- 新增：夜间模式切换 -->
-                    <div class="menu-btn" id="theme-btn" onclick="toggleTheme()" title="夜间模式">
+                    </button>
+                    <button class="menu-btn" id="btn-api" title="API 设置">
+                        <i class="fa-solid fa-key"></i>
+                        <span class="menu-label">API</span>
+                    </button>
+                    <button class="menu-btn" id="btn-sidebar-theme" title="夜间模式切换">
                         <i class="fa-solid fa-moon"></i>
-                        <span class="menu-label">夜间</span>
-                    </div>
-                    
-                    <!-- 设置 (正则) -->
-                    <div class="menu-btn" onclick="togglePanel('settings-panel')" title="更多设置">
-                        <i class="fa-solid fa-gear"></i>
-                        <span class="menu-label">设置</span>
-                    </div>
+                        <span class="menu-label">主题</span>
+                    </button>
                 </nav>
-            </div>
+            </aside>
 
-            <!-- 主内容区域 -->
-            <div class="main-area">
-                
-                <!-- 顶部标题 -->
-                <div class="chapter-header" id="main-header">
-                    <div class="current-chat-title" id="trigger-text">未选择对话</div>
-                    <div class="page-indicator" id="page-info">0 / 0</div>
-                </div>
+            <!-- Main Content -->
+            <main class="content-area">
 
-                <!-- 文本容器 -->
-                <div id="chat-container">
-                    <div style="text-align: center; color: var(--stone-gray); margin-top: 100px; font-family: var(--font-mincho);">
-                        <i class="fa-solid fa-book-open" style="font-size: 40px; margin-bottom: 20px; opacity: 0.5;"></i><br>
-                        请导入文件或在目录中选择记录
-                    </div>
-                </div>
-
-                <!-- 底部翻页栏 -->
-                <div id="pagination-bar">
-                    <button class="page-btn" onclick="changePage(-1)">
-                        <i class="fa-solid fa-chevron-left"></i> 上一页
-                    </button>
-                    <span style="font-family: var(--font-mincho); color: var(--stone-gray); font-size: 12px;"> · · · </span>
-                    <button class="page-btn" onclick="changePage(1)">
-                        下一页 <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                </div>
-
-            </div>
-
-            <!-- 弹窗面板 -->
-            
-            <!-- 1. 档案列表 -->
-            <div id="list-panel" class="zen-panel">
-                <div class="panel-header">
-                    <span><i class="fa-solid fa-list"></i> 档案目录</span>
-                    <span class="close-panel" onclick="closeAllPanels()"><i class="fa-solid fa-xmark"></i></span>
-                </div>
-                <div style="margin-bottom: 10px; display:flex; justify-content: flex-end;">
-                     <button class="zen-btn danger" id="del-chat-btn" onclick="deleteCurrentChat()" style="display:none;">删除当前记录</button>
-                </div>
-                <div id="chat-list-content" class="panel-content"></div>
-            </div>
-
-            <!-- 2. 书签列表 -->
-            <div id="bookmark-panel" class="zen-panel">
-                <div class="panel-header">
-                    <span><i class="fa-regular fa-star"></i> 书签记录</span>
-                    <span class="close-panel" onclick="closeAllPanels()"><i class="fa-solid fa-xmark"></i></span>
-                </div>
-                <div style="margin-bottom: 15px; text-align: right;">
-                    <button class="zen-btn" onclick="clearCurrentChatBookmarks()">清空当前书签</button>
-                </div>
-                <div id="bookmark-list" class="panel-content"></div>
-            </div>
-
-            <!-- 3. 设置面板 (仅保留正则) -->
-            <div id="settings-panel" class="zen-panel">
-                <div class="panel-header">
-                    <span><i class="fa-solid fa-sliders"></i> 设置与工具</span>
-                    <span class="close-panel" onclick="closeAllPanels()"><i class="fa-solid fa-xmark"></i></span>
-                </div>
-                <div class="panel-content" style="display: flex; flex-direction: column; gap: 20px;">
-                    
-                    <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
-                        <h4 style="margin-bottom: 10px; font-family: var(--font-mincho);">正则替换 (Regex)</h4>
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <button class="zen-btn" onclick="document.getElementById('regexFileInput').click()">导入脚本</button>
-                            <button class="zen-btn danger" onclick="clearAllScripts()">清空所有</button>
+                <!-- ===== Tab: Player ===== -->
+                <section id="tab-player" class="tab-content active">
+                    <div class="player-section">
+                        <!-- Playlist Area -->
+                        <div class="playlist-area">
+                            <div class="playlist-overlay" id="playlist-container">
+                                <div class="playlist-empty">
+                                    <span class="music-icon"><i class="fa-solid fa-music"></i></span>
+                                    <span class="empty-text">No Tape Loaded</span>
+                                </div>
+                            </div>
                         </div>
-                        <div id="script-list-container" style="max-height: 200px; overflow-y: auto; border: 1px dashed var(--stone-gray); padding: 5px;"></div>
+
+                        <!-- Player Controls -->
+                        <div class="player-controls">
+                            <div class="control-group">
+                                <input type="file" id="file-input-audio" accept="audio/*" style="display:none;">
+                                <div class="btn-row">
+                                    <button class="ctrl-btn" id="btn-upload" title="本地上传">
+                                        <i class="fa-solid fa-upload"></i>
+                                    </button>
+                                    <button class="ctrl-btn" id="btn-link" title="添加链接">
+                                        <i class="fa-solid fa-link"></i>
+                                    </button>
+                                </div>
+                                <span class="ctrl-label">Load / Link</span>
+                            </div>
+
+                            <div class="playback-group">
+                                <button class="ctrl-btn" id="btn-prev" title="上一曲">
+                                    <i class="fa-solid fa-backward-step"></i>
+                                </button>
+                                <button class="ctrl-btn play-btn" id="btn-play" title="播放/暂停">
+                                    <i class="fa-solid fa-play" id="play-icon"></i>
+                                </button>
+                                <button class="ctrl-btn" id="btn-next" title="下一曲">
+                                    <i class="fa-solid fa-forward-step"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div style="font-size: 12px; color: var(--stone-gray);">
-                        <p>* 移动端双击屏幕可进入/退出沉浸阅读模式。</p>
-                        <p>* 页面已锁定垂直滑动，防止左右摇晃。</p>
+                </section>
+
+                <!-- ===== Tab: Reader ===== -->
+                <section id="tab-reader" class="tab-content">
+                    <div class="reader-header">
+                        <div class="chat-title" id="current-chat-title">未选择对话</div>
+                        <div class="page-indicator" id="page-info" onclick="App.chat.promptJumpToPage()" title="点击跳转页码">
+                            P. 0 / 0</div>
                     </div>
 
+                    <div class="chat-container" id="chat-container">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-book-open"></i>
+                            <p>请导入聊天记录或在目录中选择</p>
+                            <button class="action-btn" onclick="document.getElementById('file-input-chat').click()">
+                                <i class="fa-solid fa-file-import"></i> 导入 JSON
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pagination-bar" id="pagination-bar">
+                        <button class="page-btn" onclick="App.chat.changePage(-1)">
+                            <i class="fa-solid fa-chevron-left"></i> 上一页
+                        </button>
+                        <span class="page-dots">· · ·</span>
+                        <button class="page-btn" onclick="App.chat.changePage(1)">
+                            下一页 <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- ===== Tab: Creator ===== -->
+                <section id="tab-creator" class="tab-content">
+                    <div class="creator-layout">
+                        <!-- Left: Story & Memory & Background Info -->
+                        <div class="left-sidebar-panel">
+                            <!-- Story Selector Panel -->
+                            <div class="story-panel">
+                                <div class="panel-header">
+                                    <h3><i class="fa-solid fa-book"></i> 故事</h3>
+                                    <button class="btn-text" onclick="App.story.openModal()">
+                                        + 添加更多
+                                    </button>
+                                </div>
+                                <div class="story-list" id="story-list">
+                                    <!-- Story items will be rendered here -->
+                                </div>
+                                <div class="empty-state" id="no-story-hint">
+                                    <i class="fa-solid fa-book"></i>
+                                    <p>添加故事来分类你的创作记忆</p>
+                                </div>
+                            </div>
+
+                            <div class="memory-preview-panel">
+                                <div class="panel-header">
+                                    <h3><i class="fa-solid fa-bookmark"></i> 已选择的记忆 (<span id="memory-count">0</span>)
+                                    </h3>
+                                    <button class="btn-text" onclick="App.ui.switchTab('reader')">
+                                        + 添加更多
+                                    </button>
+                                </div>
+
+                                <div class="memory-list-compact" id="memory-preview-list">
+                                    <!-- Memory cards will be rendered here -->
+                                </div>
+
+                                <div class="empty-state" id="no-memory-hint">
+                                    <i class="fa-solid fa-bookmark"></i>
+                                    <p>请先在阅读器中选择记忆</p>
+                                    <button class="action-btn" onclick="App.ui.switchTab('reader')">
+                                        前往阅读器
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Background Info Panel -->
+                            <div class="background-info-panel">
+                                <div class="panel-header">
+                                    <h3><i class="fa-solid fa-scroll"></i> 补充背景信息 (<span id="bg-info-count">0</span>)
+                                    </h3>
+                                    <button class="btn-text" onclick="App.bgInfo.openModal()">
+                                        + 添加更多
+                                    </button>
+                                </div>
+
+                                <div class="bg-info-list" id="bg-info-list">
+                                    <!-- Background info items will be rendered here -->
+                                </div>
+
+                                <div class="empty-state" id="no-bg-info-hint">
+                                    <i class="fa-solid fa-scroll"></i>
+                                    <p>添加角色人设、世界观等背景信息</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Style Selector -->
+                        <div class="style-selector-panel">
+                            <div class="form-scroll">
+                                <!-- 01 / Creator Profile -->
+                                <div class="form-group">
+                                    <label class="form-label">01 / Creator Profile</label>
+                                    <div class="input-wrapper">
+                                        <input type="text" id="char-name" class="form-input"
+                                            placeholder="Enter Character Name...">
+                                        <span class="input-hint">你想要让哪个角色来创作音乐？</span>
+                                    </div>
+                                </div>
+
+                                <!-- 02 / Vocal Range -->
+                                <div class="form-group">
+                                    <label class="form-label">02 / Vocal Range</label>
+                                    <div class="btn-grid vocal-grid" id="vocal-btns">
+                                        <!-- JS will populate -->
+                                    </div>
+                                    <div class="gender-selector" id="gender-selector" style="display:none;">
+                                        <span class="gender-label">指定性别:</span>
+                                        <button class="gender-btn" data-gender="男">男 (Male)</button>
+                                        <button class="gender-btn" data-gender="女">女 (Female)</button>
+                                    </div>
+                                    <!-- 声部音色面板 -->
+                                    <div class="timbre-panel" id="timbre-panel">
+                                        <div class="timbre-header">
+                                            <span class="music-icon"><i class="fa-solid fa-microphone"></i></span>
+                                            <span class="timbre-title">声部音色</span>
+                                        </div>
+                                        <div class="btn-grid timbre-grid" id="timbre-btns">
+                                            <!-- JS will populate -->
+                                        </div>
+                                    </div>
+                                    <p class="form-note">* 如果不确定角色的音域，请选择最后一项由 AI 判断</p>
+                                </div>
+
+                                <!-- 03 / Genre -->
+                                <div class="form-group">
+                                    <label class="form-label">03 / Musical Genre</label>
+                                    <div class="btn-grid genre-grid" id="genre-btns">
+                                        <!-- JS will populate -->
+                                    </div>
+                                    <div class="subgenre-panel" id="subgenre-panel" style="display:none;">
+                                        <div class="subgenre-header">
+                                            <span class="music-icon"><i class="fa-solid fa-sliders"></i></span>
+                                            <span class="subgenre-title">Sub-Genre</span>
+                                            <span class="genre-desc" id="genre-desc"></span>
+                                        </div>
+                                        <div class="btn-grid subgenre-grid" id="subgenre-btns">
+                                            <!-- JS will populate -->
+                                        </div>
+                                        <div class="subgenre-desc" id="subgenre-desc" style="display:none;">
+                                            <!-- Selected sub-genre description will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 04 / Instruments -->
+                                <div class="form-group" id="instrument-group" style="display:none;">
+                                    <label class="form-label">04 / Lead Instrument</label>
+                                    <div class="instrument-container" id="instrument-btns">
+                                        <!-- JS will populate -->
+                                    </div>
+                                </div>
+
+                                <!-- 05 / Lyrics Concept -->
+                                <div class="form-group">
+                                    <label class="form-label">05 / Lyrics Concept</label>
+                                    <div class="lyrics-panel" id="lyrics-panel">
+                                        <!-- 歌词语言 -->
+                                        <div class="lyrics-section">
+                                            <div class="lyrics-section-header">
+                                                <span class="music-icon"><i class="fa-solid fa-language"></i></span>
+                                                <span class="lyrics-section-title">歌词语言</span>
+                                            </div>
+                                            <div class="btn-grid lang-grid" id="lang-btns">
+                                                <!-- JS will populate -->
+                                            </div>
+                                            <input type="text" id="lang-custom" class="form-input lyrics-custom-input"
+                                                placeholder="其他语言...">
+                                        </div>
+
+                                        <!-- 创作模式 -->
+                                        <div class="lyrics-section">
+                                            <div class="lyrics-section-header">
+                                                <span class="music-icon"><i class="fa-solid fa-pen-nib"></i></span>
+                                                <span class="lyrics-section-title">歌词内容</span>
+                                            </div>
+                                            <div class="btn-grid mode-grid" id="lyric-mode-btns">
+                                                <!-- JS will populate -->
+                                            </div>
+                                            <input type="text" id="lyric-keywords"
+                                                class="form-input lyrics-custom-input" placeholder="输入你想要的歌词关键词...">
+                                        </div>
+
+                                        <!-- 韵脚方案 -->
+                                        <div class="lyrics-section">
+                                            <div class="lyrics-section-header">
+                                                <span class="music-icon"><i class="fa-solid fa-headphones"></i></span>
+                                                <span class="lyrics-section-title">韵脚方案</span>
+                                            </div>
+                                            <div class="btn-grid rhyme-grid" id="rhyme-btns">
+                                                <!-- JS will populate -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generate Button -->
+                                <div class="action-footer">
+                                    <div class="author-info">
+                                        Music Creator Cloud · Based on ST_Music
+                                    </div>
+                                    <button class="create-btn" id="btn-generate" title="生成创作笔记">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        <span>AI 创作</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== Tab: Works ===== -->
+                <section id="tab-works" class="tab-content">
+                    <div class="works-layout">
+                        <!-- Empty State - shown when no results -->
+                        <div class="works-empty-state" id="works-empty">
+                            <i class="fa-solid fa-music"></i>
+                            <h3>尚无创作作品</h3>
+                            <p>前往「创作」页面生成您的第一首歌曲</p>
+                            <button class="action-btn" onclick="App.ui.switchTab('creator')">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> 开始创作
+                            </button>
+                        </div>
+
+                        <!-- Works Layout Container - side by side -->
+                        <div class="works-layout" id="works-layout" style="display:none;">
+                            <!-- Creation Notes Panel (left) -->
+                            <div class="results-container" id="results-container">
+                                <div class="results-header">
+                                    <span><i class="fa-solid fa-music"></i> Creation Notes</span>
+                                    <button class="copy-all-btn" id="btn-copy-all">
+                                        <i class="fa-solid fa-copy"></i> 复制全部
+                                    </button>
+                                </div>
+
+                                <div class="result-section">
+                                    <div class="result-label-row">
+                                        <span>一、歌名</span>
+                                        <button class="copy-btn" id="btn-copy-title">
+                                            <i class="fa-solid fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <div class="result-content" id="result-title"></div>
+                                </div>
+
+                                <div class="result-section">
+                                    <div class="result-label-row">
+                                        <span>二、歌词结构</span>
+                                        <button class="copy-btn" id="btn-copy-lyrics">
+                                            <i class="fa-solid fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <div class="result-content lyrics-content" id="result-lyrics"></div>
+                                </div>
+
+                                <div class="result-section">
+                                    <div class="result-label-row">
+                                        <span>三、风格</span>
+                                        <button class="copy-btn" id="btn-copy-style">
+                                            <i class="fa-solid fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <div class="result-content" id="result-style"></div>
+                                </div>
+                            </div>
+
+                            <!-- Raw Output Panel (right) -->
+                            <div class="raw-output-container" id="raw-output-container">
+                                <div class="raw-output-header" onclick="App.creator.toggleRawOutput()">
+                                    <span>
+                                        <i class="fa-solid fa-chevron-down raw-toggle-icon rotated"></i>
+                                        <i class="fa-solid fa-terminal"></i> Output Content
+                                    </span>
+                                    <button class="copy-all-btn" id="btn-copy-raw"
+                                        onclick="event.stopPropagation(); App.creator.copyRaw()">
+                                        <i class="fa-solid fa-copy"></i> 复制
+                                    </button>
+                                </div>
+                                <div class="raw-output-content" id="result-raw"></div>
+                            </div>
+                        </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- ===== Overlay Panels ===== -->
+
+        <!-- Chat List Panel -->
+        <div id="panel-chat-list" class="overlay-panel">
+            <div class="panel-header">
+                <span><i class="fa-solid fa-list"></i> 档案目录</span>
+                <button class="close-btn" onclick="App.ui.closePanel()">×</button>
+            </div>
+            <div class="panel-actions">
+                <button class="danger-btn" id="btn-delete-chat" style="display:none;">删除当前记录</button>
+            </div>
+            <div class="panel-content" id="chat-list-content"></div>
+        </div>
+
+        <!-- Memories Panel -->
+        <div id="panel-memories" class="overlay-panel">
+            <div class="panel-header">
+                <span><i class="fa-solid fa-music"></i> 记忆列表</span>
+                <button class="close-btn" onclick="App.ui.closePanel()">×</button>
+            </div>
+            <div class="panel-actions">
+                <button class="action-btn" onclick="App.memory.clearAll()">清空全部</button>
+            </div>
+            <div class="panel-content" id="memories-list-content"></div>
+        </div>
+
+        <!-- Bookmark Panel -->
+        <div id="panel-bookmarks" class="overlay-panel">
+            <div class="panel-header">
+                <span><i class="fa-solid fa-bookmark"></i> 书签列表</span>
+                <button class="close-btn" onclick="App.ui.closePanel()">×</button>
+            </div>
+            <div class="panel-actions">
+                <button class="action-btn" onclick="App.bookmark.clearAll()">清空全部</button>
+            </div>
+            <div class="panel-content" id="bookmarks-list-content"></div>
+        </div>
+
+        <!-- API Settings Panel -->
+        <div id="panel-api" class="overlay-panel">
+            <div class="panel-header">
+                <span><i class="fa-solid fa-key"></i> Gemini API 配置</span>
+                <button class="close-btn" onclick="App.ui.closePanel()">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" id="api-key-input" class="form-input" placeholder="AIza...">
+                    <p class="form-note">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank">
+                            前往 Google AI Studio 获取 API Key →
+                        </a>
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模型选择</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="gemini-2.5-flash" checked>
+                            <span class="radio-mark"></span>
+                            <span>Gemini 2.5 Flash</span>
+                            <span class="badge">快速 · 免费额度高</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="gemini-2.5-pro">
+                            <span class="radio-mark"></span>
+                            <span>Gemini 2.5 Pro</span>
+                            <span class="badge">高质量 · 创意更强</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="api-status">
+                    <span id="api-status-text">未配置</span>
+                </div>
+
+                <button class="save-btn" onclick="App.api.saveConfig()">
+                    <i class="fa-solid fa-check"></i> 保存配置
+                </button>
+            </div>
+        </div>
+
+        <!-- Link Input Modal -->
+        <div id="modal-link" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加新歌曲</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">链接</label>
+                        <input type="text" id="link-url" class="form-input"
+                            placeholder="https://files.catbox.moe/XXXXXX.mp3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">歌名</label>
+                        <input type="text" id="link-name" class="form-input" placeholder="请填写歌曲名">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="App.player.closeLinkModal()">取消</button>
+                    <button class="btn-primary" onclick="App.player.confirmAddLink()">添加歌曲</button>
                 </div>
             </div>
+        </div>
 
+        <!-- Background Info Modal -->
+        <div id="modal-bg-info" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加背景信息</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">标题</label>
+                        <input type="text" id="bg-info-title" class="form-input" placeholder="例如：角色人设、世界观、故事背景...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">内容</label>
+                        <textarea id="bg-info-content" class="form-input form-textarea" placeholder="请输入详细的背景信息..."
+                            rows="5"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="App.bgInfo.closeModal()">取消</button>
+                    <button class="btn-primary" onclick="App.bgInfo.addInfo()">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Story Modal -->
+        <div id="modal-story" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加故事</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">故事标题</label>
+                        <input type="text" id="story-title" class="form-input" placeholder="为这组创作记忆命名...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="App.story.closeModal()">取消</button>
+                    <button class="btn-primary" onclick="App.story.addStory()">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Jump Modal -->
+        <div id="modal-page-jump" class="modal-overlay" style="display:none;">
+            <div class="modal-box compact">
+                <div class="modal-header">
+                    <h3>跳转页码</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" id="page-jump-label">跳转到 (1 - 0):</label>
+                        <input type="number" id="page-jump-input" class="form-input" min="1" placeholder="输入页码...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="App.chat.closePageJumpModal()">取消</button>
+                    <button class="btn-primary" onclick="App.chat.confirmPageJump()">跳转</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay" style="display:none;">
+            <div class="loading-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>AI 创作中...</span>
+            </div>
         </div>
     </div>
 
-    <!-- 隐藏的输入框 -->
-    <input type="file" id="fileInput" accept="*" multiple>
-    <input type="file" id="regexFileInput" accept=".json,.txt" multiple>
+    <!-- Hidden Inputs -->
+    <input type="file" id="file-input-chat" accept=".json,.jsonl,.txt" multiple style="display:none;">
 
-    <script>
-        // --- 视觉交互逻辑 ---
-        const app = document.getElementById('zenApp');
-        
-        function foldZen() { app.classList.add('folded'); }
-        function unfoldZen() { app.classList.remove('folded'); }
-        
-        function togglePanel(id) {
-            document.querySelectorAll('.zen-panel').forEach(p => {
-                if(p.id !== id) p.style.display = 'none';
-            });
-            const p = document.getElementById(id);
-            if(p.style.display === 'flex') {
-                p.style.display = 'none';
-            } else {
-                p.style.display = 'flex';
-                if(id === 'list-panel') refreshChatListUI();
-                if(id === 'bookmark-panel') renderBookmarkList();
-                if(id === 'settings-panel') renderScriptList();
-            }
-        }
+    <!-- Audio Element -->
+    <audio id="audio-player"></audio>
 
-        function closeAllPanels() {
-            document.querySelectorAll('.zen-panel').forEach(p => p.style.display = 'none');
-        }
-
-        // --- 新增功能：夜间模式 ---
-        let isDarkMode = false;
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            if (isDarkMode) {
-                document.body.classList.add('dark-mode');
-                document.querySelector('#theme-btn i').className = 'fa-solid fa-sun';
-                document.querySelector('#theme-btn .menu-label').textContent = '日间';
-            } else {
-                document.body.classList.remove('dark-mode');
-                document.querySelector('#theme-btn i').className = 'fa-solid fa-moon';
-                document.querySelector('#theme-btn .menu-label').textContent = '夜间';
-            }
-            localStorage.setItem('st_reader_theme', isDarkMode ? 'dark' : 'light');
-        }
-
-        function initTheme() {
-            const savedTheme = localStorage.getItem('st_reader_theme');
-            if (savedTheme === 'dark') {
-                isDarkMode = true;
-                document.body.classList.add('dark-mode');
-                document.querySelector('#theme-btn i').className = 'fa-solid fa-sun';
-                document.querySelector('#theme-btn .menu-label').textContent = '日间';
-            }
-        }
-
-        // --- 新增功能：移动端双击沉浸模式 ---
-        let lastTap = 0;
-        let isImmersive = false;
-
-        document.getElementById('zenApp').addEventListener('touchend', function(e) {
-            // 排除点击按钮、输入框、面板等交互元素
-            if (e.target.closest('.menu-btn') || 
-                e.target.closest('.zen-panel') || 
-                e.target.closest('.page-btn') ||
-                e.target.closest('.page-indicator') ||
-                e.target.closest('.bm-icon')) { // 排除点击书签图标
-                return;
-            }
-
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            
-            // 判断双击 (小于300ms)
-            if (tapLength < 300 && tapLength > 0) {
-                toggleImmersive();
-                e.preventDefault(); // 防止默认放大行为
-            }
-            lastTap = currentTime;
-        });
-
-        function toggleImmersive() {
-            isImmersive = !isImmersive;
-            const nav = document.getElementById('main-nav');
-            const header = document.getElementById('main-header');
-            const pageBar = document.getElementById('pagination-bar');
-            const container = document.getElementById('chat-container');
-
-            if (isImmersive) {
-                nav.classList.add('immersive-hidden');
-                header.classList.add('immersive-hidden');
-                pageBar.classList.add('immersive-hidden');
-                // 增加上下边距以利用空间
-                container.style.paddingTop = '60px'; 
-            } else {
-                nav.classList.remove('immersive-hidden');
-                header.classList.remove('immersive-hidden');
-                if (isPageMode) pageBar.classList.remove('immersive-hidden'); // 只有翻页模式才恢复底栏
-                container.style.paddingTop = '40px';
-            }
-        }
-
-        // --- 核心逻辑 ---
-        
-        const dbName = "STViewerDB";
-        const storeName = "chats";
-
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(dbName, 1);
-                request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(storeName)) {
-                        db.createObjectStore(storeName, { keyPath: "id" });
-                    }
-                };
-                request.onsuccess = (e) => resolve(e.target.result);
-                request.onerror = (e) => reject(e);
-            });
-        }
-
-        async function saveChatToDB(chatData) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(storeName, "readwrite");
-                const store = tx.objectStore(storeName);
-                store.put(chatData);
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e);
-            });
-        }
-
-        async function getAllChatsFromDB() {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(storeName, "readonly");
-                const store = tx.objectStore(storeName);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = (e) => reject(e);
-            });
-        }
-
-        async function deleteChatFromDB(id) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(storeName, "readwrite");
-                const store = tx.objectStore(storeName);
-                store.delete(id);
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e);
-            });
-        }
-
-        // 全局变量
-        let allMessages = [];
-        let isPageMode = true; 
-        let currentPage = 1;
-        let currentChatId = null;
-        const pageSize = 15; 
-        let scriptLibrary = [];
-
-        // 元素引用
-        const chatContainer = document.getElementById('chat-container');
-        const pageInfoSpan = document.getElementById('page-info');
-        const paginationBar = document.getElementById('pagination-bar');
-        const fileInput = document.getElementById('fileInput');
-        
-        // 文件导入监听
-        fileInput.addEventListener('change', async function(e) {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-            
-            let importedCount = 0;
-            for (const file of files) {
-                const text = await file.text();
-                const messages = parseChatContent(text);
-                
-                if (messages.length > 0) {
-                    const chatId = "chat_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-                    const fileName = file.name.replace(/\.(jsonl|txt|json)$/i, '');
-                    let charName = "未知角色";
-                    const firstCharMsg = messages.find(m => !m.is_user && m.name);
-                    if (firstCharMsg) charName = firstCharMsg.name;
-                    
-                    const chatRecord = {
-                        id: chatId,
-                        name: `${charName} - ${fileName}`,
-                        characterName: charName,
-                        messages: messages,
-                        progress: { mode: true, page: 1, scrollTop: 0 },
-                        timestamp: Date.now()
-                    };
-                    await saveChatToDB(chatRecord);
-                    importedCount++;
-                }
-            }
-            if (importedCount > 0) {
-                alert(`成功导入 ${importedCount} 份档案`);
-                refreshChatListUI();
-                if(!currentChatId) {
-                   const chats = await getAllChatsFromDB();
-                   const latest = chats.sort((a,b)=>b.timestamp - a.timestamp)[0];
-                   if(latest) switchChat(latest.id);
-                }
-            }
-            fileInput.value = '';
-        });
-
-        function parseChatContent(content) {
-            const msgs = [];
-            const lines = content.split('\n');
-            lines.forEach((line) => {
-                if (!line.trim()) return;
-                try {
-                    const data = JSON.parse(line);
-                    if (data.name || data.mes) msgs.push(data);
-                } catch (err) {}
-            });
-            return msgs;
-        }
-
-        // 视图渲染
-        function renderCurrentView() {
-            chatContainer.innerHTML = '';
-            
-            if (allMessages.length === 0) {
-                chatContainer.innerHTML = '<div style="text-align:center;margin-top:50px;color:var(--stone-gray)">空</div>';
-                return;
-            }
-
-            let messagesToRender = [];
-            if (isPageMode) {
-                const startIndex = (currentPage - 1) * pageSize;
-                const endIndex = Math.min(startIndex + pageSize, allMessages.length);
-                messagesToRender = allMessages.slice(startIndex, endIndex);
-                
-                const totalPages = Math.ceil(allMessages.length / pageSize);
-                pageInfoSpan.textContent = `P. ${currentPage} / ${totalPages}`;
-                chatContainer.scrollTop = 0;
-            } else {
-                messagesToRender = allMessages;
-                pageInfoSpan.textContent = `全部 (${allMessages.length})`;
-            }
-
-            const globalOffset = isPageMode ? (currentPage - 1) * pageSize : 0;
-            
-            messagesToRender.forEach((data, i) => {
-                createMessageNode(data, globalOffset + i);
-            });
-        }
-
-        function createMessageNode(data, index) {
-            const name = data.name || '???';
-            let text = data.mes || '';
-            const isUser = data.is_user === true;
-
-            // 应用正则
-            text = applyUserRegex(text);
-            
-            // 清理
-            text = text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, ''); 
-            text = text.replace(/<disclaimer>[\s\S]*?<\/disclaimer>/gi, '');
-            text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-            text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-            text = text.replace(/<link[^>]*>/gi, '');
-            
-            // 纯 Markdown 渲染
-            let htmlContent = marked.parse(text);
-
-            // 书签状态
-            const bookmarks = getBookmarks();
-            const isBookmarked = bookmarks.some(b => b.index === index);
-            const activeClass = isBookmarked ? 'active' : '';
-
-            const row = document.createElement('div');
-            row.className = `message-row ${isUser ? 'message-user' : 'message-char'}`;
-            row.id = `msg-row-${index}`;
-            
-            // --- 结构调整：将 msg-action-bar 移入 char-name-tag ---
-            // 这样在移动端更易触控，且位于名字左侧（或右侧，视 flex 排版而定）
-            row.innerHTML = `
-                <div class="char-name-tag">
-                    <div class="msg-action-bar">
-                        <i class="fa-solid fa-bookmark bm-icon ${activeClass}" onclick="toggleBookmark(${index})"></i>
-                    </div>
-                    ${name}
-                </div>
-                <div class="bubble-content">
-                    <div class="bubble">${htmlContent}</div>
-                </div>
-            `;
-            chatContainer.appendChild(row);
-        }
-
-        // 翻页
-        function changePage(delta) {
-            const totalPages = Math.ceil(allMessages.length / pageSize);
-            const newPage = currentPage + delta;
-            if (newPage >= 1 && newPage <= totalPages) {
-                currentPage = newPage;
-                renderCurrentView();
-                saveProgressRuntime();
-            }
-        }
-
-        // 模式切换
-        function toggleMode() {
-            if(!isPageMode) {
-                const scrollTop = chatContainer.scrollTop;
-                const rows = chatContainer.querySelectorAll('.message-row');
-                let topIndex = 0;
-                for (let i = 0; i < rows.length; i++) {
-                    if (rows[i].offsetTop >= scrollTop - 50) {
-                        topIndex = i; break;
-                    }
-                }
-                currentPage = Math.floor(topIndex / pageSize) + 1;
-            }
-
-            isPageMode = !isPageMode;
-            
-            const btn = document.querySelector('#mode-btn .menu-label');
-            const icon = document.querySelector('#mode-btn i');
-            if(isPageMode) {
-                btn.textContent = "翻页"; icon.className = "fa-solid fa-copy";
-                if (!isImmersive) paginationBar.classList.remove('hidden'); // Check Immersive
-            } else {
-                btn.textContent = "滑动"; icon.className = "fa-solid fa-scroll";
-                paginationBar.classList.add('hidden');
-            }
-
-            renderCurrentView();
-            
-            if (!isPageMode) {
-                 setTimeout(() => {
-                    const targetIndex = (currentPage - 1) * pageSize;
-                    const el = document.getElementById(`msg-row-${targetIndex}`);
-                    if(el) el.scrollIntoView();
-                }, 50);
-            }
-            saveProgressRuntime();
-        }
-
-        // 对话列表逻辑
-        async function refreshChatListUI() {
-            const chats = await getAllChatsFromDB();
-            chats.sort((a, b) => b.timestamp - a.timestamp);
-            
-            const listDiv = document.getElementById('chat-list-content');
-            listDiv.innerHTML = '';
-            
-            if(chats.length === 0) {
-                listDiv.innerHTML = '<div style="padding:20px;text-align:center;color:var(--stone-gray)">暂无档案</div>';
-                return;
-            }
-
-            chats.forEach(chat => {
-                const item = document.createElement('div');
-                item.className = 'zen-list-item';
-                if(currentChatId === chat.id) item.classList.add('active');
-                
-                item.innerHTML = `
-                    <div style="font-family:var(--font-mincho)">
-                        <div style="font-size:16px; margin-bottom:4px;">${chat.characterName}</div>
-                        <div style="font-size:12px; color:var(--ink-light)">${chat.name}</div>
-                    </div>
-                    <div style="font-size:12px; color:var(--stone-gray)">
-                        ${new Date(chat.timestamp).toLocaleDateString()}
-                    </div>
-                `;
-                item.onclick = () => {
-                    switchChat(chat.id);
-                    closeAllPanels();
-                };
-                listDiv.appendChild(item);
-            });
-        }
-
-        async function switchChat(id) {
-            const chats = await getAllChatsFromDB();
-            const target = chats.find(c => c.id === id);
-            if(target) {
-                currentChatId = target.id;
-                allMessages = target.messages;
-                document.getElementById('trigger-text').textContent = target.name;
-                document.getElementById('del-chat-btn').style.display = 'block';
-
-                const runtimeKey = "st_runtime_" + id;
-                const runtimeData = localStorage.getItem(runtimeKey);
-                if(runtimeData) {
-                    const p = JSON.parse(runtimeData);
-                    isPageMode = p.mode;
-                    currentPage = p.page;
-                } else {
-                    isPageMode = true;
-                    currentPage = 1;
-                }
-                
-                // 同步模式UI
-                const icon = document.querySelector('#mode-btn i');
-                const label = document.querySelector('#mode-btn .menu-label');
-                if(isPageMode) {
-                    label.textContent = "翻页"; icon.className = "fa-solid fa-copy";
-                    if (!isImmersive) paginationBar.classList.remove('hidden');
-                } else {
-                    label.textContent = "滑动"; icon.className = "fa-solid fa-scroll";
-                    paginationBar.classList.add('hidden');
-                }
-
-                renderCurrentView();
-            }
-        }
-
-        function saveProgressRuntime() {
-            if (!currentChatId) return;
-            const progress = {
-                mode: isPageMode,
-                page: currentPage,
-                scrollTop: chatContainer.scrollTop
-            };
-            localStorage.setItem("st_runtime_" + currentChatId, JSON.stringify(progress));
-        }
-        
-        async function deleteCurrentChat() {
-            if(confirm("确定销毁这份档案吗？")) {
-                await deleteChatFromDB(currentChatId);
-                location.reload(); 
-            }
-        }
-
-        // 书签系统
-        function getBookmarks() {
-            if (!currentChatId) return [];
-            const store = localStorage.getItem('st_bookmarks_' + currentChatId);
-            return store ? JSON.parse(store) : [];
-        }
-
-        function toggleBookmark(index) {
-            if (!currentChatId) return;
-            let list = getBookmarks();
-            const existingIdx = list.findIndex(b => b.index === index);
-            
-            if (existingIdx !== -1) {
-                list.splice(existingIdx, 1);
-            } else {
-                const msg = allMessages[index];
-                let preview = (msg.mes || '').replace(/<[^>]+>/g, '').substring(0, 30) + "...";
-                list.push({ index: index, text: preview, char: msg.name });
-                list.sort((a,b) => a.index - b.index);
-            }
-            localStorage.setItem('st_bookmarks_' + currentChatId, JSON.stringify(list));
-            renderCurrentView(); 
-            renderBookmarkList(); 
-        }
-
-        function renderBookmarkList() {
-            const list = getBookmarks();
-            const div = document.getElementById('bookmark-list');
-            div.innerHTML = '';
-            if(list.length === 0) {
-                 div.innerHTML = '<div style="padding:20px;text-align:center;color:var(--stone-gray)">暂无书签</div>';
-                 return;
-            }
-            list.forEach(bm => {
-                const item = document.createElement('div');
-                item.className = 'zen-list-item';
-                item.innerHTML = `
-                    <div>
-                        <span style="color:var(--cinnabar-red); font-size:12px;">#${bm.index + 1}</span> 
-                        ${bm.text}
-                    </div>
-                `;
-                item.onclick = () => {
-                    closeAllPanels();
-                    jumpToMessage(bm.index);
-                };
-                div.appendChild(item);
-            });
-        }
-
-        function jumpToMessage(index) {
-             if (isPageMode) {
-                currentPage = Math.floor(index / pageSize) + 1;
-                renderCurrentView();
-            }
-            setTimeout(() => {
-                const el = document.getElementById(`msg-row-${index}`);
-                if(el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.style.background = 'var(--highlight-bg)';
-                    setTimeout(() => el.style.background = 'transparent', 1500);
-                }
-            }, 100);
-        }
-        
-        function clearCurrentChatBookmarks() {
-            if(currentChatId) {
-                localStorage.removeItem('st_bookmarks_' + currentChatId);
-                renderBookmarkList();
-                renderCurrentView();
-            }
-        }
-
-        // 正则替换
-        function applyUserRegex(text) {
-            if (!scriptLibrary || scriptLibrary.length === 0) return text;
-            let newText = text;
-            scriptLibrary.forEach(script => {
-                if (!script.active) return;
-                script.rules.forEach(rule => {
-                    try {
-                        let pattern = rule.regex;
-                        let flags = rule.flags || 'g';
-                        if (pattern.startsWith('/') && pattern.lastIndexOf('/') > 0) {
-                            const lastSlash = pattern.lastIndexOf('/');
-                            flags = pattern.substring(lastSlash + 1) || 'g';
-                            pattern = pattern.substring(1, lastSlash);
-                        }
-                        const re = new RegExp(pattern, flags);
-                        newText = newText.replace(re, rule.replacement || '');
-                    } catch (e) {}
-                });
-            });
-            return newText;
-        }
-
-        const regexInput = document.getElementById('regexFileInput');
-        regexInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    let rules = Array.isArray(data) ? data : (data.regexList || [data]);
-                    scriptLibrary.push({
-                        id: Date.now(),
-                        name: file.name,
-                        active: true,
-                        rules: rules
-                    });
-                    localStorage.setItem('st_reader_script_lib', JSON.stringify(scriptLibrary));
-                    renderScriptList();
-                    renderCurrentView();
-                } catch(err) { alert("脚本格式错误"); }
-            };
-            reader.readAsText(file);
-        });
-
-        function renderScriptList() {
-            const con = document.getElementById('script-list-container');
-            con.innerHTML = '';
-            scriptLibrary.forEach((s, idx) => {
-                const d = document.createElement('div');
-                d.className = 'zen-list-item';
-                d.innerHTML = `
-                    <span>${s.name}</span>
-                    <div>
-                        <button class="zen-btn" style="padding:2px 5px; font-size:10px" onclick="event.stopPropagation();toggleScript(${idx})">${s.active ? '禁用' : '启用'}</button>
-                        <button class="zen-btn danger" style="padding:2px 5px; font-size:10px" onclick="event.stopPropagation();deleteScript(${idx})">X</button>
-                    </div>
-                `;
-                con.appendChild(d);
-            });
-        }
-        
-        function toggleScript(idx) {
-            scriptLibrary[idx].active = !scriptLibrary[idx].active;
-            localStorage.setItem('st_reader_script_lib', JSON.stringify(scriptLibrary));
-            renderScriptList(); renderCurrentView();
-        }
-        function deleteScript(idx) {
-            scriptLibrary.splice(idx, 1);
-            localStorage.setItem('st_reader_script_lib', JSON.stringify(scriptLibrary));
-            renderScriptList(); renderCurrentView();
-        }
-        function clearAllScripts() {
-            scriptLibrary = [];
-            localStorage.setItem('st_reader_script_lib', JSON.stringify(scriptLibrary));
-            renderScriptList(); renderCurrentView();
-        }
-
-        // 初始化
-        window.onload = async () => {
-            initTheme(); // 初始化主题
-
-            const savedScripts = localStorage.getItem('st_reader_script_lib');
-            if(savedScripts) scriptLibrary = JSON.parse(savedScripts);
-            
-            const chats = await getAllChatsFromDB();
-            if(chats.length > 0) {
-                const latest = chats.sort((a,b)=>b.timestamp - a.timestamp)[0];
-                switchChat(latest.id);
-            }
-        };
-
-        // 页码跳转输入
-        pageInfoSpan.addEventListener('click', function() {
-            if(this.querySelector('input')) return;
-            const oldText = this.textContent;
-            const total = Math.ceil(allMessages.length / pageSize);
-            this.innerHTML = `<input type="number" value="${currentPage}" style="width:50px; text-align:center;"> / ${total}`;
-            const inp = this.querySelector('input');
-            inp.focus();
-            inp.addEventListener('blur', () => {
-                setTimeout(() => {
-                    const val = parseInt(inp.value);
-                    if(val > 0 && val <= total) { currentPage = val; renderCurrentView(); }
-                    else { renderCurrentView(); } 
-                }, 200);
-            });
-            inp.addEventListener('keydown', (e) => {
-                if(e.key === 'Enter') inp.blur();
-            });
-        });
-
-    </script>
+    <!-- Scripts -->
+    <script src="api.js"></script>
+    <script src="app.js"></script>
 </body>
+
 </html>
