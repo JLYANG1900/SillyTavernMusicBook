@@ -59,6 +59,14 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
+@media (max-width: 768px) {
+    body {
+        overflow-y: auto;
+        overflow-x: hidden;
+        height: auto;
+    }
+}
+
 /* Remove text shadows (override any inherited styles) */
 #app-root,
 #app-root * {
@@ -2723,21 +2731,23 @@ body.dark-mode .list-item:hover {
 
     /* Fix layout for proper scrolling */
     #app-root {
-        height: 100vh;
-        height: 100dvh;
-        /* Dynamic viewport height for mobile browsers */
-        overflow: hidden;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow: visible;
+        display: block;
     }
 
     .main-layout {
-        flex: 1;
-        overflow: hidden;
-        height: 100%;
+        flex: none;
+        overflow: visible;
+        height: auto;
+        display: block;
     }
 
     .content-area {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: visible;
+        height: auto;
     }
 
     /* Sidebar as overlay */
@@ -2746,6 +2756,7 @@ body.dark-mode .list-item:hover {
         left: -100px;
         top: 0;
         height: 100vh;
+        /* Fallback for browsers without proper dvh support */
         height: 100dvh;
         z-index: 200;
         transition: left 0.3s ease;
@@ -2843,8 +2854,10 @@ body.dark-mode .list-item:hover {
         width: 100% !important;
         flex: none !important;
         overflow: visible !important;
-        padding: 12px;
+        padding: 0;
+        /* Remove padding here, let child containers handle it or parent */
         max-height: none !important;
+        background: transparent;
     }
 
     /* Style selector panel (01/Creator Profile etc) comes second */
@@ -2878,8 +2891,7 @@ body.dark-mode .list-item:hover {
     /* Content area scrollable */
     .content-area {
         height: auto !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
+        overflow: visible !important;
     }
 
     /* Tab content auto height */

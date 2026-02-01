@@ -219,6 +219,21 @@ const App = {
             this.bindSidebarEvents();
             this.loadTheme();
             this.initMobileSidebar();
+            this.initScrollToTop();
+        },
+
+        // Click header to scroll to top
+        initScrollToTop() {
+            const header = document.querySelector('.app-header');
+            if (header) {
+                header.addEventListener('click', (e) => {
+                    // Prevent scrolling if clicking a button or interactable element
+                    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.tab-btn')) {
+                        return;
+                    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
         },
 
         // Initialize mobile sidebar with double-tap gesture
