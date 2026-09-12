@@ -18,7 +18,7 @@ const GeminiAPI = {
      * Load API configuration from localStorage
      */
     loadConfig() {
-        this.apiKey = localStorage.getItem('mcc_gemini_api_key') || null;
+        this.apiKey = sessionStorage.getItem('mcc_gemini_api_key') || null;
         this.model = localStorage.getItem('mcc_gemini_model') || 'gemini-2.5-flash';
         this.updateStatusUI();
     },
@@ -32,7 +32,7 @@ const GeminiAPI = {
 
         if (keyInput && keyInput.value.trim()) {
             this.apiKey = keyInput.value.trim();
-            localStorage.setItem('mcc_gemini_api_key', this.apiKey);
+            sessionStorage.setItem('mcc_gemini_api_key', this.apiKey);
         }
 
         modelInputs.forEach(input => {
