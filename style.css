@@ -533,12 +533,89 @@ body.dark-mode .playback-group {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
 }
 
 .chat-title {
     font-family: var(--font-serif);
     font-size: 20px;
     color: var(--text-dark);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reader-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.reader-font-controls,
+.font-size-setting-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.reader-font-controls {
+    padding: 4px 6px;
+}
+
+.font-size-setting-control {
+    padding: 10px;
+}
+
+.font-size-step-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-sub);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.font-size-step-btn:hover:not(:disabled) {
+    background: var(--panel-bg);
+    color: var(--accent);
+}
+
+.font-size-step-btn:disabled,
+.compact-ctrl-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+}
+
+.font-size-value {
+    min-width: 44px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-sub);
+    font-variant-numeric: tabular-nums;
+}
+
+.font-size-setting-control .font-size-value {
+    flex: 1;
+    font-size: 14px;
+}
+
+.compact-ctrl-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
 }
 
 .page-indicator {
@@ -725,7 +802,7 @@ body.dark-mode .playback-group {
 }
 
 .bubble {
-    font-size: 15px;
+    font-size: var(--chat-font-size, 15px);
     line-height: 1.8;
     color: var(--text-dark);
     text-align: justify;
@@ -1613,16 +1690,19 @@ body.dark-mode .story-item:hover {
 }
 
 /* ===== Works Tab ===== */
-.works-layout {
+.works-panel {
     height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     background: var(--surface);
-    overflow-y: auto;
+    overflow: hidden;
+    padding: 24px;
 }
 
 .works-empty-state {
     flex: 1;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1653,47 +1733,60 @@ body.dark-mode .story-item:hover {
 }
 
 /* Works Layout - Side by Side Container */
-.works-layout {
-    display: flex !important;
-    flex-direction: row !important;
+.works-content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 24px;
-    padding: 24px;
     width: 100%;
-    max-width: 100%;
+    height: 100%;
+    min-height: 0;
     box-sizing: border-box;
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 /* Results Container (left side) */
 .results-container {
-    flex: 1;
     min-width: 0;
-    background: var(--card-bg);
-    border-radius: 12px;
-    padding: 20px;
+    min-height: 0;
+    height: 100%;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow-y: auto;
 }
 
 /* Raw Output Container (right side) */
 .raw-output-container {
-    flex: 1;
     min-width: 0;
-    background: var(--card-bg);
-    border-radius: 12px;
-    padding: 20px;
+    min-height: 0;
+    height: 100%;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* Mobile: Stack vertically */
 @media (max-width: 1024px) {
-    .works-layout {
-        flex-direction: column;
+    .works-panel {
+        overflow-y: auto;
     }
 
+    .works-content-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .results-container,
     .raw-output-container {
-        max-height: 400px;
+        height: auto;
+        min-height: 360px;
     }
 }
 
@@ -1701,9 +1794,9 @@ body.dark-mode .story-item:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
 }
 
 .raw-output-header span {
@@ -1720,6 +1813,8 @@ body.dark-mode .story-item:hover {
 }
 
 .raw-output-content {
+    flex: 1;
+    min-height: 0;
     font-family: var(--font-mono);
     font-size: 12px;
     line-height: 1.6;
@@ -1729,13 +1824,18 @@ body.dark-mode .story-item:hover {
     border-radius: 8px;
     white-space: pre-wrap;
     word-break: break-word;
-    max-height: 400px;
+    max-height: none;
     overflow-y: auto;
+    margin: 16px 20px 20px;
     transition: all 0.3s ease;
 }
 
 .raw-output-content.collapsed {
+    flex: 0 0 auto;
     max-height: 0;
+    min-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
     padding: 0 16px;
     overflow: hidden;
 }
@@ -1961,7 +2061,7 @@ body.dark-mode .result-content.lyrics-content {
     cursor: not-allowed;
 }
 
-/* ===== Results Container (styles now in .works-layout section above) ===== */
+/* ===== Results Container (styles now in works tab section above) ===== */
 
 .results-header {
     display: flex;
@@ -2047,6 +2147,30 @@ body.dark-mode .result-content.lyrics-content {
     font-family: var(--font-serif);
     max-height: 300px;
     overflow-y: auto;
+}
+
+.results-container .results-header {
+    flex-shrink: 0;
+    margin: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.results-container .result-section {
+    margin: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+}
+
+.raw-output-container .raw-output-header {
+    margin: 0;
+}
+
+.raw-output-container .copy-all-btn {
+    flex-shrink: 0;
 }
 
 /* ===== Overlay Panels ===== */
@@ -2418,6 +2542,24 @@ body.dark-mode .list-item:hover {
         padding: 20px;
     }
 
+    .reader-header {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 16px;
+        gap: 10px;
+    }
+
+    .chat-title {
+        width: 100%;
+        font-size: 18px;
+    }
+
+    .reader-actions {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
     .form-scroll {
         padding: 16px;
     }
@@ -2505,14 +2647,17 @@ body.dark-mode .list-item:hover {
     }
 
     /* Works layout */
-    .works-layout {
+    .works-panel {
         padding: 12px;
+    }
+
+    .works-content-grid {
         gap: 12px;
     }
 
     .results-container,
     .raw-output-container {
-        padding: 12px;
+        min-height: 320px;
     }
 
     .results-header {
@@ -2528,6 +2673,30 @@ body.dark-mode .list-item:hover {
     /* Chat messages */
     .chat-container {
         padding: 12px;
+    }
+
+    .reader-header {
+        padding: 12px;
+    }
+
+    .reader-font-controls {
+        gap: 4px;
+        padding: 3px 5px;
+    }
+
+    .font-size-step-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .font-size-value {
+        min-width: 38px;
+        font-size: 12px;
+    }
+
+    .page-indicator {
+        font-size: 12px;
+        padding: 4px 6px;
     }
 
     .message-bubble {
@@ -2591,8 +2760,9 @@ body.dark-mode .list-item:hover {
     }
 
     /* Works layout - stack on iPad portrait */
-    .works-layout {
-        flex-direction: column !important;
+    .works-content-grid {
+        grid-template-columns: 1fr;
+        height: auto;
     }
 }
 
@@ -2689,17 +2859,17 @@ body.dark-mode .list-item:hover {
 @media (max-width: 768px) {
 
     /* Force Works layout to be vertical on mobile */
-    .works-layout {
-        flex-direction: column !important;
-        padding: 12px;
+    .works-content-grid {
+        grid-template-columns: 1fr;
+        height: auto;
         gap: 16px;
     }
 
     /* Full width panels */
-    .works-layout .results-container,
-    .works-layout .raw-output-container {
+    .works-content-grid .results-container,
+    .works-content-grid .raw-output-container {
         width: 100%;
-        flex: none;
+        min-height: 320px;
     }
 
     /* Result sections stack properly */

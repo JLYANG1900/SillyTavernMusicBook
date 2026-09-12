@@ -213,11 +213,16 @@ const App = {
 
     ui: {
         lastTapTime: 0,
+        currentFontSize: 15,
+        fontSizeMin: 11,
+        fontSizeMax: 31,
+        fontSizeStep: 2,
 
         init() {
             this.bindTabEvents();
             this.bindSidebarEvents();
             this.loadTheme();
+            this.loadFontSize();
             this.initMobileSidebar();
             this.initScrollToTop();
         },
@@ -334,6 +339,9 @@ const App = {
                 GeminiAPI.updateStatusUI();
                 this.togglePanel('panel-api');
             };
+            document.getElementById('btn-settings').onclick = () => {
+                this.togglePanel('panel-settings');
+            };
             // Sidebar theme toggle button
             document.getElementById('btn-sidebar-theme').onclick = () => this.toggleTheme();
         },
@@ -376,6 +384,41 @@ const App = {
                 const sidebarBtn = document.getElementById('btn-sidebar-theme');
                 if (sidebarBtn) sidebarBtn.querySelector('i').className = 'fa-solid fa-sun';
             }
+        },
+
+        loadFontSize() {
+            const savedSize = localStorage.getItem('mcc_font_size');
+            const parsedSize = parseInt(savedSize, 10);
+            if (!Number.isNaN(parsedSize)) {
+                this.currentFontSize = this.clampFontSize(parsedSize);
+            }
+            this.applyFontSize();
+        },
+
+        adjustFontSize(delta) {
+            const newSize = this.clampFontSize(this.currentFontSize + delta * this.fontSizeStep);
+
+            this.currentFontSize = newSize;
+            localStorage.setItem('mcc_font_size', this.currentFontSize);
+            this.applyFontSize();
+        },
+
+        clampFontSize(size) {
+            return Math.min(this.fontSizeMax, Math.max(this.fontSizeMin, size));
+        },
+
+        applyFontSize() {
+            document.documentElement.style.setProperty('--chat-font-size', this.currentFontSize + 'px');
+            const displays = document.querySelectorAll('[data-font-size-display]');
+            displays.forEach(display => {
+                display.textContent = this.currentFontSize + 'px';
+            });
+            document.querySelectorAll('[data-font-size-action="decrease"]').forEach(btn => {
+                btn.disabled = this.currentFontSize <= this.fontSizeMin;
+            });
+            document.querySelectorAll('[data-font-size-action="increase"]').forEach(btn => {
+                btn.disabled = this.currentFontSize >= this.fontSizeMax;
+            });
         },
 
         showLoading(show) {
@@ -567,11 +610,11 @@ const App = {
                 row.setAttribute('data-msg-index', globalIndex);
                 row.innerHTML = `
                     <div class="char-name-tag">
-                        <button class="memory-btn ${isMemory ? 'active' : ''}" 
+                        <button class="memory-btn ${isMemory ? 'active' : ''}"
                                 onclick="App.memory.toggle(${globalIndex})" title="添加到记忆">
                             <i class="fa-solid fa-music"></i>
                         </button>
-                        <button class="bookmark-btn ${isBookmark ? 'active' : ''}" 
+                        <button class="bookmark-btn ${isBookmark ? 'active' : ''}"
                                 onclick="App.bookmark.toggle(${globalIndex})" title="添加书签">
                             <i class="fa-solid fa-bookmark"></i>
                         </button>
@@ -660,7 +703,7 @@ const App = {
             }
 
             container.innerHTML = chats.map(chat => `
-                <div class="list-item ${App.currentChatId === chat.id ? 'active' : ''}" 
+                <div class="list-item ${App.currentChatId === chat.id ? 'active' : ''}"
                      onclick="App.chat.switchChat('${chat.id}')">
                     <div>
                         <div style="font-weight:600">${chat.characterName}</div>
@@ -1215,7 +1258,7 @@ const App = {
             });
 
             if (emptyState) emptyState.style.display = 'none';
-            if (worksLayout) worksLayout.style.display = 'flex';
+            if (worksLayout) worksLayout.style.display = 'grid';
 
             // Parsed content
             const titleEl = document.getElementById('result-title');
@@ -1373,7 +1416,7 @@ const App = {
             }
 
             container.innerHTML = this.playlist.map((track, i) => `
-                <div class="track-item ${i === this.currentIndex ? 'active' : ''}" 
+                <div class="track-item ${i === this.currentIndex ? 'active' : ''}"
                      onclick="App.player.play(${i})">
                     <div class="track-info">
                         <span class="track-num">${String(i + 1).padStart(2, '0')}</span>

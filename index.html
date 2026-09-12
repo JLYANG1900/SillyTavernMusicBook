@@ -91,6 +91,10 @@
                         <i class="fa-solid fa-key"></i>
                         <span class="menu-label">API</span>
                     </button>
+                    <button class="menu-btn" id="btn-settings" title="阅读器设置">
+                        <i class="fa-solid fa-gear"></i>
+                        <span class="menu-label">设置</span>
+                    </button>
                     <button class="menu-btn" id="btn-sidebar-theme" title="夜间模式切换">
                         <i class="fa-solid fa-moon"></i>
                         <span class="menu-label">主题</span>
@@ -148,8 +152,21 @@
                 <section id="tab-reader" class="tab-content">
                     <div class="reader-header">
                         <div class="chat-title" id="current-chat-title">未选择对话</div>
-                        <div class="page-indicator" id="page-info" onclick="App.chat.promptJumpToPage()" title="点击跳转页码">
-                            P. 0 / 0</div>
+                        <div class="reader-actions">
+                            <div class="reader-font-controls" role="group" aria-label="阅读器字体大小">
+                                <button class="font-size-step-btn" data-font-size-action="decrease"
+                                    onclick="App.ui.adjustFontSize(-1)" title="缩小字体" aria-label="缩小字体">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                                <span class="font-size-value" data-font-size-display>15px</span>
+                                <button class="font-size-step-btn" data-font-size-action="increase"
+                                    onclick="App.ui.adjustFontSize(1)" title="放大字体" aria-label="放大字体">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="page-indicator" id="page-info" onclick="App.chat.promptJumpToPage()"
+                                title="点击跳转页码">P. 0 / 0</div>
+                        </div>
                     </div>
 
                     <div class="chat-container" id="chat-container">
@@ -379,7 +396,7 @@
 
                 <!-- ===== Tab: Works ===== -->
                 <section id="tab-works" class="tab-content">
-                    <div class="works-layout">
+                    <div class="works-panel">
                         <!-- Empty State - shown when no results -->
                         <div class="works-empty-state" id="works-empty">
                             <i class="fa-solid fa-music"></i>
@@ -391,7 +408,7 @@
                         </div>
 
                         <!-- Works Layout Container - side by side -->
-                        <div class="works-layout" id="works-layout" style="display:none;">
+                        <div class="works-content-grid" id="works-layout" style="display:none;">
                             <!-- Creation Notes Panel (left) -->
                             <div class="results-container" id="results-container">
                                 <div class="results-header">
@@ -447,6 +464,7 @@
                                 <div class="raw-output-content" id="result-raw"></div>
                             </div>
                         </div>
+                    </div>
                 </section>
             </main>
         </div>
@@ -531,6 +549,31 @@
                 <button class="save-btn" onclick="App.api.saveConfig()">
                     <i class="fa-solid fa-check"></i> 保存配置
                 </button>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="panel-settings" class="overlay-panel">
+            <div class="panel-header">
+                <span><i class="fa-solid fa-gear"></i> 阅读器设置</span>
+                <button class="close-btn" onclick="App.ui.closePanel()">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="form-group">
+                    <label class="form-label">调整字体大小</label>
+                    <div class="font-size-setting-control">
+                        <button class="ctrl-btn compact-ctrl-btn" data-font-size-action="decrease"
+                            onclick="App.ui.adjustFontSize(-1)" title="缩小字体" aria-label="缩小字体">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <span id="font-size-display" class="font-size-value" data-font-size-display>15px</span>
+                        <button class="ctrl-btn compact-ctrl-btn" data-font-size-action="increase"
+                            onclick="App.ui.adjustFontSize(1)" title="放大字体" aria-label="放大字体">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                    <p class="form-note">调节聊天阅读器中的文本大小</p>
+                </div>
             </div>
         </div>
 
