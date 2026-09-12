@@ -5,22 +5,94 @@
 
 const GeminiAPI = {
     apiKey: null,
+    apiKeys: {
+        gemini: null,
+        deepseek: null
+    },
     model: 'gemini-2.5-flash',
+    defaultModel: 'gemini-2.5-flash',
+    modelCatalog: {
+        'gemini-2.5-flash': { label: 'Gemini 2.5 Flash', provider: 'gemini' },
+        'gemini-2.5-pro': { label: 'Gemini 2.5 Pro', provider: 'gemini' },
+        'gemini-3.7-flash': { label: 'Gemini 3.7 Flash', provider: 'gemini' },
+        'gemini-3.6-flash': { label: 'Gemini 3.6 Flash', provider: 'gemini' },
+        'gemini-3.5-flash': { label: 'Gemini 3.5 Flash', provider: 'gemini' },
+        'gemini-3.5-flash-lite': { label: 'Gemini 3.5 Flash Lite', provider: 'gemini' },
+        'gemini-3.1-flash-lite': { label: 'Gemini 3.1 Flash Lite', provider: 'gemini' },
+        'deepseek-v4-flash': { label: 'DeepSeek V4 Flash', provider: 'deepseek' }
+    },
+    providers: {
+        gemini: {
+            name: 'Gemini',
+            keyStorage: 'mcc_gemini_api_key',
+            keyLabel: 'Gemini API Key',
+            keyPlaceholder: 'AIza...',
+            keyUrl: 'https://aistudio.google.com/app/apikey',
+            keyLinkText: '前往 Google AI Studio 获取 API Key →'
+        },
+        deepseek: {
+            name: 'DeepSeek',
+            keyStorage: 'mcc_deepseek_api_key',
+            keyLabel: 'DeepSeek API Key',
+            keyPlaceholder: 'sk-...',
+            keyUrl: 'https://platform.deepseek.com/api_keys',
+            keyLinkText: '前往 DeepSeek 平台获取 API Key →'
+        }
+    },
 
     /**
      * Initialize API from localStorage
      */
     init() {
         this.loadConfig();
+        this.bindModelEvents();
     },
 
     /**
      * Load API configuration from localStorage
      */
     loadConfig() {
-        this.apiKey = localStorage.getItem('mcc_gemini_api_key') || null;
-        this.model = localStorage.getItem('mcc_gemini_model') || 'gemini-2.5-flash';
+        this.apiKeys.gemini = localStorage.getItem(this.providers.gemini.keyStorage) || null;
+        this.apiKeys.deepseek = localStorage.getItem(this.providers.deepseek.keyStorage) || null;
+        this.model = localStorage.getItem('mcc_ai_model')
+            || localStorage.getItem('mcc_gemini_model')
+            || this.defaultModel;
+        if (!this.modelCatalog[this.model]) {
+            this.model = this.defaultModel;
+        }
+        this.apiKey = this.getApiKeyForModel(this.model);
         this.updateStatusUI();
+    },
+
+    bindModelEvents() {
+        const modelInputs = document.querySelectorAll('input[name="api-model"]');
+        modelInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                if (!input.checked) return;
+                this.model = input.value;
+                this.apiKey = this.getApiKeyForModel(this.model);
+                this.updateStatusUI();
+            });
+        });
+    },
+
+    getModelConfig(model = this.model) {
+        return this.modelCatalog[model] || this.modelCatalog[this.defaultModel];
+    },
+
+    getProviderConfig(model = this.model) {
+        const provider = this.getModelConfig(model).provider;
+        return this.providers[provider] || this.providers.gemini;
+    },
+
+    getApiKeyForModel(model = this.model) {
+        const provider = this.getModelConfig(model).provider;
+        return this.apiKeys[provider] || null;
+    },
+
+    getSelectedModel() {
+        const selectedInput = document.querySelector('input[name="api-model"]:checked');
+        return selectedInput?.value || this.model || this.defaultModel;
     },
 
     /**
@@ -28,19 +100,21 @@ const GeminiAPI = {
      */
     saveConfig() {
         const keyInput = document.getElementById('api-key-input');
-        const modelInputs = document.querySelectorAll('input[name="api-model"]');
+        const selectedModel = this.getSelectedModel();
+        const modelConfig = this.getModelConfig(selectedModel);
+        const providerConfig = this.providers[modelConfig.provider];
 
         if (keyInput && keyInput.value.trim()) {
-            this.apiKey = keyInput.value.trim();
-            localStorage.setItem('mcc_gemini_api_key', this.apiKey);
+            this.apiKeys[modelConfig.provider] = keyInput.value.trim();
+            localStorage.setItem(providerConfig.keyStorage, this.apiKeys[modelConfig.provider]);
         }
 
-        modelInputs.forEach(input => {
-            if (input.checked) {
-                this.model = input.value;
-                localStorage.setItem('mcc_gemini_model', this.model);
-            }
-        });
+        this.model = selectedModel;
+        this.apiKey = this.getApiKeyForModel(this.model);
+        localStorage.setItem('mcc_ai_model', this.model);
+        if (modelConfig.provider === 'gemini') {
+            localStorage.setItem('mcc_gemini_model', this.model);
+        }
 
         this.updateStatusUI();
         App.ui.showToast('API 配置已保存');
@@ -53,20 +127,36 @@ const GeminiAPI = {
     updateStatusUI() {
         const statusEl = document.getElementById('api-status-text');
         const keyInput = document.getElementById('api-key-input');
+        const keyLabel = document.getElementById('api-key-label');
+        const keyLink = document.getElementById('api-key-link');
+        const modelConfig = this.getModelConfig();
+        const providerConfig = this.getProviderConfig();
+
+        this.apiKey = this.getApiKeyForModel(this.model);
 
         if (statusEl) {
             if (this.apiKey) {
-                statusEl.textContent = `已配置 · ${this.model}`;
+                statusEl.textContent = `已配置 · ${modelConfig.label}`;
                 statusEl.classList.add('configured');
             } else {
-                statusEl.textContent = '未配置';
+                statusEl.textContent = `未配置 · ${modelConfig.label}`;
                 statusEl.classList.remove('configured');
             }
         }
 
-        // 回填 API Key (masked)
-        if (keyInput && this.apiKey) {
-            keyInput.value = this.apiKey;
+        if (keyLabel) {
+            keyLabel.textContent = providerConfig.keyLabel;
+        }
+
+        if (keyLink) {
+            keyLink.href = providerConfig.keyUrl;
+            keyLink.textContent = providerConfig.keyLinkText;
+        }
+
+        // 回填当前模型所属服务商的 API Key
+        if (keyInput) {
+            keyInput.value = this.apiKey || '';
+            keyInput.placeholder = providerConfig.keyPlaceholder;
         }
 
         // 回填 model 选择
@@ -80,7 +170,7 @@ const GeminiAPI = {
      * Check if API is configured
      */
     isConfigured() {
-        return !!this.apiKey;
+        return !!this.getApiKeyForModel(this.model);
     },
 
     /**
@@ -89,8 +179,12 @@ const GeminiAPI = {
      * @returns {Promise<Object>} - Parsed music note with title, lyrics, style
      */
     async generateMusicNote(params) {
+        const modelConfig = this.getModelConfig();
+        const providerConfig = this.getProviderConfig();
+        this.apiKey = this.getApiKeyForModel(this.model);
+
         if (!this.apiKey) {
-            throw new Error('请先配置 Gemini API Key');
+            throw new Error(`请先配置 ${providerConfig.name} API Key`);
         }
 
         const {
@@ -206,33 +300,80 @@ ${customKeywords ? `- 额外关键词：${customKeywords}` : ''}
 请直接输出上述格式的内容，严格保留"一、歌名"、"二、歌词结构"、"三、风格"的标题格式，不要添加任何额外说明或markdown标记。`;
 
         try {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: {
-                            temperature: 1,
-                            maxOutputTokens: 20000,
-                            topP: 0.98
-                        }
-                    })
-                }
-            );
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error?.message || `API Error: ${response.status}`);
+            if (modelConfig.provider === 'deepseek') {
+                return await this.generateWithDeepSeek(prompt);
             }
-
-            const data = await response.json();
-            return this.parseMusicNote(data);
-
+            return await this.generateWithGemini(prompt);
         } catch (error) {
             console.error('[GeminiAPI] Error:', error);
             throw error;
+        }
+    },
+
+    async generateWithGemini(prompt) {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 1,
+                        maxOutputTokens: 20000,
+                        topP: 0.98
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const error = await this.parseErrorResponse(response);
+            throw new Error(error.error?.message || error.message || `API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return this.parseMusicNote(data);
+    },
+
+    async generateWithDeepSeek(prompt) {
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+                model: this.model,
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 1,
+                max_tokens: 20000,
+                top_p: 0.98
+            })
+        });
+
+        if (!response.ok) {
+            const error = await this.parseErrorResponse(response);
+            throw new Error(error.error?.message || error.message || `API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        if (!text) {
+            console.error('[GeminiAPI] Invalid DeepSeek response:', data);
+            return { full: '错误: DeepSeek 未返回有效内容', title: '', lyrics: '', style: '' };
+        }
+
+        console.log('[GeminiAPI] Raw DeepSeek text:', text);
+        return this.parseMusicNoteText(text);
+    },
+
+    async parseErrorResponse(response) {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (error) {
+            return { message: text || `API Error: ${response.status}` };
         }
     },
 
@@ -264,7 +405,15 @@ ${customKeywords ? `- 额外关键词：${customKeywords}` : ''}
 
             const text = candidate.content.parts[0].text;
             console.log('[GeminiAPI] Raw text:', text);
+            return this.parseMusicNoteText(text);
+        } catch (e) {
+            console.error('[GeminiAPI] Parse error:', e);
+            return { full: `解析错误: ${e.message}`, title: '', lyrics: '', style: '' };
+        }
+    },
 
+    parseMusicNoteText(text) {
+        try {
             // 更健壮的正则匹配，处理不同的空白和换行格式
             // 匹配 "一、歌名" 后面到 "二、" 之前的内容
             const titleMatch = text.match(/一、\s*歌名[：:\s]*([\s\S]*?)(?=\s*二、|\s*$)/i);

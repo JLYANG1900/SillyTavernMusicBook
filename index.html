@@ -510,15 +510,15 @@
         <!-- API Settings Panel -->
         <div id="panel-api" class="overlay-panel">
             <div class="panel-header">
-                <span><i class="fa-solid fa-key"></i> Gemini API 配置</span>
+                <span><i class="fa-solid fa-key"></i> AI API 配置</span>
                 <button class="close-btn" onclick="App.ui.closePanel()">×</button>
             </div>
             <div class="panel-content">
                 <div class="form-group">
-                    <label class="form-label">API Key</label>
+                    <label class="form-label" id="api-key-label">Gemini API Key</label>
                     <input type="password" id="api-key-input" class="form-input" placeholder="AIza...">
                     <p class="form-note">
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" id="api-key-link">
                             前往 Google AI Studio 获取 API Key →
                         </a>
                     </p>
@@ -538,6 +538,42 @@
                             <span class="radio-mark"></span>
                             <span>Gemini 2.5 Pro</span>
                             <span class="badge">高质量 · 创意更强</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="gemini-3.7-flash">
+                            <span class="radio-mark"></span>
+                            <span>Gemini 3.7 Flash</span>
+                            <span class="badge">新模型 · 快速</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="gemini-3.6-flash">
+                            <span class="radio-mark"></span>
+                            <span>Gemini 3.6 Flash</span>
+                            <span class="badge">快速</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="gemini-3.5-flash">
+                            <span class="radio-mark"></span>
+                            <span>Gemini 3.5 Flash</span>
+                            <span class="badge">均衡</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="gemini-3.5-flash-lite">
+                            <span class="radio-mark"></span>
+                            <span>Gemini 3.5 Flash Lite</span>
+                            <span class="badge">轻量 · 省额度</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="gemini-3.1-flash-lite">
+                            <span class="radio-mark"></span>
+                            <span>Gemini 3.1 Flash Lite</span>
+                            <span class="badge">轻量</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="api-model" value="deepseek-v4-flash">
+                            <span class="radio-mark"></span>
+                            <span>DeepSeek V4 Flash</span>
+                            <span class="badge">DeepSeek</span>
                         </label>
                     </div>
                 </div>

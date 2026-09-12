@@ -1199,7 +1199,8 @@ const App = {
             }
 
             if (!GeminiAPI.isConfigured()) {
-                App.ui.showToast('请先配置 Gemini API');
+                const providerName = GeminiAPI.getProviderConfig?.().name || 'AI';
+                App.ui.showToast(`请先配置 ${providerName} API`);
                 App.ui.togglePanel('panel-api');
                 return;
             }
