@@ -1,3 +1,5 @@
+<!-- ZH-CN -->
+
 # SillyTavern Music Book
 
 > 让角色成为你的音乐制作人。
@@ -137,6 +139,157 @@ python3 -m http.server 8000
 - 创作请求只会在点击「AI 创作」时发送给当前选择模型对应的服务商。
 
 ## 相关链接
+
+- [ST_Music](https://github.com/JLYANG1900/ST_Music)
+- [SillyTavern](https://github.com/SillyTavern/SillyTavern)
+- [Google AI Studio](https://aistudio.google.com/)
+- [DeepSeek Platform](https://platform.deepseek.com/)
+
+---
+
+SillyTavern Music Book - Based on ST_Music by JLYANG1900
+
+<!-- EN-US -->
+
+# SillyTavern Music Book
+
+> Turn your character into your music producer.
+
+SillyTavern Music Book is a cloud web app that turns SillyTavern chat logs, character memories, and supplemental lore into AI music creation notes. You can import chats, read them page by page, mark memories as creative material, configure musical parameters, and generate titles, lyric structures, and style prompts that can be copied directly into AI music tools such as Suno or Udio.
+
+Live app: [https://jlyang1900.github.io/SillyTavernMusicBook/](https://jlyang1900.github.io/SillyTavernMusicBook/)
+
+## Feature Overview
+
+| Module | Features |
+| --- | --- |
+| Chat Reader | Imports `.json`, `.jsonl`, and `.txt` chat logs, supports paged reading, and persists data locally with IndexedDB |
+| Reading Experience | Supports dark mode, page jumping, bookmark navigation, and adjustable reader text size |
+| Memory Selection | Marks messages as creative memories and filters source material by the current chat and story |
+| Bookmark List | Saves important messages and jumps back to the original message from the bookmark panel |
+| Story Groups | Creates story topics to organize memories for different creative threads |
+| Background Notes | Adds character profiles, worldbuilding, plot context, and other optional generation material |
+| AI Creation | Configures character name, vocal range, timbre, genre, subgenre, instruments, lyric language, lyric mode, and rhyme scheme |
+| Works Panel | Shows structured creation notes and full Output Content in equal-width columns, with long content scrolling inside each panel |
+| Audio Player | Braun SK4-inspired player with local audio upload and external audio links |
+| Mobile Support | Responsive layout, touch-friendly controls, mobile sidebar, natural scrolling, and safe-area handling |
+
+## Quick Start
+
+1. Open the live app.
+2. Click "API" in the sidebar, choose a model, and enter the API Key for the selected provider.
+3. Import a SillyTavern chat log.
+4. In the reader, mark memories that can inspire lyrics. Add bookmarks, stories, and background notes when needed.
+5. Switch to "Creator" and configure the character and music parameters.
+6. Click "AI Create", then copy the structured result or full output from the "Works" panel.
+
+## API and Models
+
+The app now supports both Gemini and DeepSeek models. Keys are stored separately per provider. When you switch models, the API panel automatically updates the key label, placeholder, and provider link.
+
+### Gemini
+
+Get a key: [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+| Model | Notes |
+| --- | --- |
+| `gemini-2.5-flash` | Default model for fast everyday generation |
+| `gemini-2.5-pro` | Better suited for higher-quality or more creative generation |
+| `gemini-3.7-flash` | Added Flash model |
+| `gemini-3.6-flash` | Added Flash model |
+| `gemini-3.5-flash` | Added Flash model |
+| `gemini-3.5-flash-lite` | Added lightweight model |
+| `gemini-3.1-flash-lite` | Added lightweight model |
+
+Gemini models use Google's `generateContent` endpoint.
+
+### DeepSeek
+
+Get a key: [DeepSeek API Keys](https://platform.deepseek.com/api_keys)
+
+| Model | Notes |
+| --- | --- |
+| `deepseek-v4-flash` | Added DeepSeek Flash model |
+
+DeepSeek models use the OpenAI-compatible `chat/completions` endpoint.
+
+## Creation Parameters
+
+### Vocal Settings
+
+- Vocal range: soprano, mezzo-soprano, contralto, tenor, baritone, bass, or inferred from the character profile.
+- Timbre: Auto, husky, clean, warm, gritty, bright, dark, soulful, and more.
+
+### Musical Style
+
+- Main genres: pop, rock, folk, hip-hop, electronic, classical, jazz, R&B, world music, and more.
+- Subgenres: each main genre includes detailed subgenre options with descriptions.
+- Instruments: choose suggested instruments or enter a custom instrument manually.
+
+### Lyrics
+
+- Language: Chinese, English, Japanese, Korean, Cantonese, custom, and more.
+- Content mode: generate from plot memories or provide custom keywords.
+- Rhyme schemes: none, ABCB, AABB, ABAB, AAAA.
+
+## Reader Updates
+
+The reader now supports text-size controls:
+
+- The reader header includes smaller / larger buttons.
+- The settings panel also includes the same font-size controls.
+- Font size ranges from `11px` to `31px`, changing by `2px` each step.
+- The selected size is saved locally and restored next time.
+
+## Works Panel Updates
+
+The "Works" panel layout has been rebuilt:
+
+- The left column shows title, lyric structure, and style sections.
+- The right column shows the full `Output Content`.
+- Desktop layout uses equal-width columns.
+- Long content scrolls inside its own panel, preventing the Output panel from being pushed off screen.
+- Tablet and mobile layouts automatically stack the panels vertically.
+
+## Output Example
+
+```text
+一、歌名
+星空下的约定
+
+二、歌词结构：
+[Verse]
+夜风轻轻吹过发梢
+你的笑容在记忆里闪耀
+
+[Chorus]
+星空下的约定 永远铭记
+你的眼眸是我唯一的方向
+
+三、风格
+1.公式：[流行音乐] + [Dream Pop] + [钢琴 + 合成器] + [温柔怀念]
+2.BPM: 110-130 (Upbeat)
+3.人声指定：女 女高音 (Soprano) | 音色：空灵、略带气声
+The instrumentation features Piano playing gentle, flowing arpeggios...
+```
+
+## Local Development
+
+This is a static web app. You can open `index.html` directly, or start a local static server from the project directory:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then visit `http://localhost:8000`.
+
+## Data and Privacy
+
+- Imported chat logs are stored locally in browser IndexedDB.
+- API keys are stored in browser localStorage.
+- Generation requests are sent only when you click "AI Create", and only to the provider for the currently selected model.
+
+## Related Links
 
 - [ST_Music](https://github.com/JLYANG1900/ST_Music)
 - [SillyTavern](https://github.com/SillyTavern/SillyTavern)
