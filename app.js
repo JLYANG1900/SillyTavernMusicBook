@@ -490,8 +490,13 @@ const App = {
             const files = Array.from(e.target.files);
             if (!files.length) return;
 
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
             let imported = 0;
             for (const file of files) {
+                if (!/\.(jsonl|txt|json)$/i.test(file.name) || file.size > MAX_FILE_SIZE) {
+                    App.ui.showToast(`已跳过无效文件: ${file.name}`);
+                    continue;
+                }
                 const text = await file.text();
                 const messages = this.parseContent(text);
 
